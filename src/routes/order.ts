@@ -3,12 +3,16 @@ const router = Router();
 
 import {
   createOrder,
+  fetchOrderByToday,
+  fetchOrdersByRange,
+  getOrders,
   getPurchasedOrderByProductId,
-  retrieve,
 } from "../controllers/order";
 
 router.post("/create", createOrder);
-router.get("/retrieve", retrieve);
-router.get("/retrieve/:id", getPurchasedOrderByProductId);
+router.get("/retrieve", getOrders);
+router.get("/retrieve/:purchasedId", getPurchasedOrderByProductId);
+router.get("/order-today", fetchOrderByToday);
+router.get("/order-range", fetchOrdersByRange);
 
 export default router;

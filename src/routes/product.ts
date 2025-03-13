@@ -1,16 +1,18 @@
 import { Router } from "express";
 const router = Router();
 import {
-  create,
-  findProductById,
-  retrieve,
+  createProduct,
+  getProductById,
+  getAllProducts,
   updateProductQuantityById,
   updateProductDetailsById,
+  getBestSellingProducts,
 } from "../controllers/product";
 
-router.post("/create", create);
-router.get("/retrieve", retrieve);
-router.get("/:id", findProductById);
+router.post("/create", createProduct);
+router.get("/retrieve", getAllProducts);
+router.get("/best-sellers", getBestSellingProducts);
+router.get("/:id", getProductById);
 router.post("/update/:id", updateProductQuantityById);
 router.put("/update-details/:id", updateProductDetailsById);
 

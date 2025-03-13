@@ -1,9 +1,8 @@
 import { Router } from "express";
-import { DailyLogged, initialCount, retrieveCount } from "../controllers/log";
+import { createLog, getLogs } from "../controllers/log";
 const router = Router();
 
-router.post("/count", initialCount);
-router.get("/retrieve", retrieveCount);
-router.post("/dailylog", DailyLogged);
+router.post("", createLog);
+router.get("/retrieve", getLogs);
 
 export default router;

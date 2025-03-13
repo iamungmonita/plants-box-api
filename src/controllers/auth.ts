@@ -4,6 +4,8 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { setCookie } from "../utils/cookie";
 import { config } from "../config/config"; // Import the config file
+import { saveBase64Image } from "..";
+import { initialCount } from "./log";
 
 declare global {
   namespace Express {
@@ -13,20 +15,20 @@ declare global {
   }
 }
 
-class ClassToken {
+class TokenClass {
   id: string;
-  firstname: string;
-  lastname: string;
+  firstName: string;
+  lastName: string;
 
-  constructor(id: string, firstname: string, lastname: string) {
+  constructor(id: string, firstName: string, lastName: string) {
     this.id = id;
-    this.lastname = lastname;
-    this.firstname = firstname;
+    this.lastName = lastName;
+    this.firstName = firstName;
   }
 
   generateToken = (secretKey: string) => {
     const token = jwt.sign(
-      { id: this.id, firstname: this.firstname, lastname: this.lastname },
+      { id: this.id, firstName: this.firstName, lastName: this.lastName },
       secretKey,
       {
         expiresIn: config.tokenExpiration,
@@ -37,32 +39,61 @@ class ClassToken {
 }
 
 export const signUp = async (req: Request, res: Response): Promise<void> => {
-  const { firstname, lastname, role, email, password } = req.body;
+  const {
+    firstName,
+    lastName,
+    role,
+    codes,
+    email,
+    password,
+    phoneNumber,
+    isActive,
+    createdBy,
+    pictures,
+  } = req.body;
   try {
-    if (!firstname || !lastname || !role || !email || !password) {
+    if (!createdBy) {
+      res.status(401).json({ message: "unauthorized personnel." });
+      return;
+    }
+    if (
+      !firstName ||
+      !lastName ||
+      !role ||
+      !email ||
+      !password ||
+      !phoneNumber ||
+      !codes
+    ) {
       res.status(400).json({ message: "All fields are required" });
       return;
     }
-    const username = firstname + lastname;
+
     const hashedPassword = await bcrypt.hash(password, 10);
-    const admin = await User.create({
+    let savedImages = "";
+
+    if (pictures && pictures !== "") {
+      savedImages = await saveBase64Image(pictures, `product_${Date.now()}`);
+    }
+    const user = await User.create({
       email,
-      firstname,
-      lastname,
+      phoneNumber,
+      firstName,
+      lastName,
       role,
       password: hashedPassword,
+      isActive,
+      codes,
+      pictures: savedImages,
+      createdBy,
     });
 
-    const token = new ClassToken(
-      admin._id.toString(),
-      admin.firstname,
-      admin.lastname
-    ).generateToken(config.secretKey);
+    if (!user) {
+      res.status(400).json({ message: "Error creating user." });
+      return;
+    }
 
-    setCookie(res, config.authTokenName, token, {
-      maxAge: config.tokenExpiration,
-    });
-    res.status(200).json({ message: "Created successfully", admin });
+    res.status(200).json({ data: user });
   } catch (error) {
     if (
       error instanceof Error &&
@@ -73,8 +104,10 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
         name: "email",
         message: `This email already registered`,
       });
+      return;
     } else {
       res.status(500).json({ message: "Internal server error" });
+      return;
     }
   }
 };
@@ -100,32 +133,33 @@ export const signIn = async (req: Request, res: Response): Promise<void> => {
         .json({ name: "password", message: "The password does not match" });
       return;
     }
-
-    const token = new ClassToken(
+    const count = await initialCount(admin._id.toString());
+    const token = new TokenClass(
       admin._id.toString(),
-      admin.firstname,
-      admin.lastname
+      admin.firstName,
+      admin.lastName
     ).generateToken(config.secretKey);
 
     setCookie(res, config.authTokenName, token, {
       maxAge: config.tokenExpiration,
     });
+    const data = {
+      admin,
+      count,
+    };
 
-    res.status(200).json({ message: "Logged in successfully", admin });
+    res.status(200).json({ data: data });
   } catch (error: unknown) {
-    // Explicitly typing error as `unknown`
-    // Type assertion to `Error`
     if (error instanceof Error) {
       console.error("Error during sign-in:", {
         message: error.message,
         stack: error.stack,
-        email, // Log the email that was attempted (avoid logging passwords)
+        email,
         time: new Date().toISOString(),
       });
     } else {
       console.error("An unknown error occurred:", error);
     }
-
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -147,7 +181,8 @@ export const authentication = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const token = req.cookies?.["f1ee97b19e11145c6fba1be1f8204e00"];
+  const authTokenName = process.env.AUTH_TOKEN || "auth_token";
+  const token = req.cookies?.[authTokenName];
   if (!token) {
     res.status(401).json({ message: "No authentication token provided" });
     return;
@@ -173,6 +208,88 @@ export const fetchProfile = async (req: Request, res: Response) => {
     res.status(401).json({ message: "cannot find admin" });
     return;
   }
-  res.status(200).json({ message: "this user has the access", admin });
+  res.status(200).json({ data: admin });
   return;
+};
+
+export const getUsers = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const users = await User.find();
+    res.status(200).json({ data: users });
+  } catch (error) {
+    res.status(500).json({ message: "An unexpected error occurred" });
+  }
+};
+
+export const getUserById = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { id } = req.params;
+  try {
+    if (!id) {
+      res.status(400).json({ message: "ID is required." });
+      return;
+    }
+    const user = await User.findById(id);
+    if (!user) {
+      res.status(400).json({ message: "User does not exist." });
+      return;
+    }
+    res.status(200).json({ data: user });
+  } catch (error) {
+    res.status(500).json({ message: "An unexpected error occurred" });
+  }
+};
+
+export const updateUserById = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { createdBy, pictures, password, ...data } = req.body;
+    const user = await User.findById(id);
+
+    if (!createdBy) {
+      res.status(200).json({ message: "Unauthorized personnel." });
+      return;
+    }
+    if (!user) {
+      res.status(404).json({ message: "Product not found" });
+      return;
+    }
+
+    const updateData = { ...data };
+    if (createdBy) {
+      updateData.updatedBy = createdBy; // Explicitly include createdBy
+    }
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updateData.password = hashedPassword; // Update the password with the hashed value
+    }
+    if (pictures === null || pictures === "") {
+      updateData.pictures = null; // Explicitly clear the pictures field
+    } else if (pictures && pictures.startsWith("data:image")) {
+      const savedImage = await saveBase64Image(
+        pictures,
+        `product_${Date.now()}`
+      );
+      updateData.pictures = savedImage; // Update with the new image
+    } else {
+      updateData.pictures = pictures;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (updatedUser) {
+      res.status(200).json({ success: true, data: updatedUser });
+    }
+  } catch (error) {
+    console.error("Error updating product stock:", error);
+    res.status(500).json({ message: "Server error", error });
+  }
 };
