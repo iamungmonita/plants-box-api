@@ -1,3 +1,4 @@
+import { saveBase64Image } from "..";
 import { Product } from "../models/products";
 import { Response, Request } from "express";
 
@@ -59,12 +60,16 @@ export const create = async (req: Request, res: Response): Promise<void> => {
 };
 
 export const retrieve = async (req: Request, res: Response): Promise<void> => {
-  const { name, type, category } = req.query;
+  const { name, type, category, barcode } = req.query;
   try {
     const filter: any = {};
 
     if (name) {
       Object.assign(filter, { name: { $regex: name, $options: "i" } }); // Partial match, case-insensitive
+    }
+
+    if (barcode) {
+      Object.assign(filter, { barcode: { $regex: barcode, $options: "i" } }); // Partial match, case-insensitive
     }
 
     if (type) {
@@ -102,23 +107,31 @@ export const updateProductQuantityById = async (
     console.log("Request Body:", req.body); // Debugging line
 
     const { id } = req.params;
-    const { stock } = req.body;
+    const { qty } = req.body;
 
-    if (typeof stock !== "number" || stock < 0) {
+    if (typeof qty !== "number" || qty < 0) {
       res.status(400).json({ message: "Invalid stock value" });
       return;
     }
+    const matchingProduct = await Product.findById(id);
+    if (!matchingProduct) {
+      res.status(400).json({ message: "cannot find product" });
+      return;
+    }
+    console.log("Current stock:", matchingProduct.stock);
+    console.log("Qty to subtract:", qty);
+    const newStock = matchingProduct?.stock - qty;
 
     const product = await Product.findByIdAndUpdate(
       id,
-      { $set: { stock } },
+      { $set: { stock: newStock } },
       { new: true, runValidators: true }
     );
 
-    if (!product) {
-      res.status(404).json({ message: "Product not found" });
-      return;
-    }
+    // if (!product) {
+    //   res.status(404).json({ message: "Product not found" });
+    //   return;
+    // }
 
     res.status(200).json({ success: true, product });
   } catch (error) {
@@ -134,7 +147,7 @@ export const updateProductDetailsById = async (
     console.log("Request Body:", req.body); // Debugging line
 
     const { id } = req.params;
-    const data = req.body;
+    const { pictures, ...data } = req.body;
 
     const product = await Product.findByIdAndUpdate(id, data, {
       new: true,
@@ -145,7 +158,14 @@ export const updateProductDetailsById = async (
       res.status(404).json({ message: "Product not found" });
       return;
     }
-
+    if (pictures) {
+      const savedImages = await saveBase64Image(
+        pictures,
+        `product_${Date.now()}`
+      );
+      product.pictures = savedImages;
+      await product.save();
+    }
     res.status(200).json({ success: true, product });
   } catch (error) {
     console.error("Error updating product stock:", error);

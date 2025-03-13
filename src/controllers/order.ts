@@ -51,14 +51,24 @@ export const createOrder = async (
 };
 
 export const retrieve = async (req: Request, res: Response): Promise<void> => {
-  const { purchaseId } = req.query;
-  const query = Object.assign(
-    {},
-    purchaseId ? { purchasedId: purchaseId } : {}
-  );
+  const { purchasedId } = req.query;
+  // const authHeader = req.headers.authorization;
 
+  // Check if token exists
+  // if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  //   res.status(401).json({ error: "Unauthorized personnel" });
+  //   return;
+  // }
+
+  // const token = authHeader.split(" ")[1];
   try {
-    const orders = await Order.find(query);
+    const filter: any = {};
+    if (purchasedId) {
+      Object.assign(filter, {
+        purchasedId: { $regex: purchasedId, $options: "i" },
+      }); // Partial match, case-insensitive
+    }
+    const orders = await Order.find(filter);
 
     res.status(200).json(orders);
   } catch (error) {

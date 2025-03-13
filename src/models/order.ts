@@ -10,7 +10,6 @@ const orderSchema = new mongoose.Schema(
         stock: { type: Number, required: true },
         quantity: { type: Number, required: true },
         name: { type: String, required: true },
-        size: { type: String, required: true },
       },
     ],
     discount: { type: Number },

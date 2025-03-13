@@ -1,8 +1,14 @@
 import mongoose from "mongoose";
 
-const admin = new mongoose.Schema(
+const user = new mongoose.Schema(
   {
-    username: {
+    firstname: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 3,
+    },
+    lastname: {
       type: String,
       required: true,
       trim: true,
@@ -20,10 +26,14 @@ const admin = new mongoose.Schema(
       required: true,
       minlength: 6,
     },
+    role: {
+      type: String,
+      required: true,
+    },
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields
   }
 );
 
-export const Admin = mongoose.model("Admin", admin);
+export const User = mongoose.model("users", user);

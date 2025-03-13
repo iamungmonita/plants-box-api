@@ -1,5 +1,5 @@
 import { Response, Request, NextFunction } from "express";
-import { Admin } from "../models/auth";
+import { User } from "../models/auth";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { setCookie } from "../utils/cookie";
@@ -15,16 +15,18 @@ declare global {
 
 class ClassToken {
   id: string;
-  username: string;
+  firstname: string;
+  lastname: string;
 
-  constructor(id: string, username: string) {
+  constructor(id: string, firstname: string, lastname: string) {
     this.id = id;
-    this.username = username;
+    this.lastname = lastname;
+    this.firstname = firstname;
   }
 
   generateToken = (secretKey: string) => {
     const token = jwt.sign(
-      { id: this.id, username: this.username },
+      { id: this.id, firstname: this.firstname, lastname: this.lastname },
       secretKey,
       {
         expiresIn: config.tokenExpiration,
@@ -34,24 +36,27 @@ class ClassToken {
   };
 }
 
-export const register = async (req: Request, res: Response): Promise<void> => {
-  const { username, email, password } = req.body;
+export const signUp = async (req: Request, res: Response): Promise<void> => {
+  const { firstname, lastname, role, email, password } = req.body;
   try {
-    if (!username || !email || !password) {
+    if (!firstname || !lastname || !role || !email || !password) {
       res.status(400).json({ message: "All fields are required" });
       return;
     }
-
+    const username = firstname + lastname;
     const hashedPassword = await bcrypt.hash(password, 10);
-    const admin = await Admin.create({
+    const admin = await User.create({
       email,
-      username,
+      firstname,
+      lastname,
+      role,
       password: hashedPassword,
     });
 
     const token = new ClassToken(
       admin._id.toString(),
-      admin.username
+      admin.firstname,
+      admin.lastname
     ).generateToken(config.secretKey);
 
     setCookie(res, config.authTokenName, token, {
@@ -82,7 +87,7 @@ export const signIn = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const admin = await Admin.findOne({ email });
+    const admin = await User.findOne({ email });
     if (!admin) {
       res.status(401).json({ name: "email", message: "Cannot find the admin" });
       return;
@@ -98,7 +103,8 @@ export const signIn = async (req: Request, res: Response): Promise<void> => {
 
     const token = new ClassToken(
       admin._id.toString(),
-      admin.username
+      admin.firstname,
+      admin.lastname
     ).generateToken(config.secretKey);
 
     setCookie(res, config.authTokenName, token, {
@@ -141,7 +147,7 @@ export const authentication = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const token = req.cookies?.auth_token;
+  const token = req.cookies?.["f1ee97b19e11145c6fba1be1f8204e00"];
   if (!token) {
     res.status(401).json({ message: "No authentication token provided" });
     return;
@@ -162,7 +168,7 @@ export const authentication = async (
 };
 
 export const fetchProfile = async (req: Request, res: Response) => {
-  const admin = await Admin.findById(req.admin);
+  const admin = await User.findById(req.admin);
   if (!admin) {
     res.status(401).json({ message: "cannot find admin" });
     return;
