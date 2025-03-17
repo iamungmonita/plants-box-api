@@ -1,6 +1,7 @@
-import { saveBase64Image } from '..';
+import { Request, Response } from 'express';
+
+import { saveBase64Image } from '../helpers/file';
 import { Product } from '../models/products';
-import { Response, Request } from 'express';
 
 export const createProduct = async (req: Request, res: Response) => {
   try {
