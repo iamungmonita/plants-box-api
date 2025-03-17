@@ -1,20 +1,17 @@
-import { Response, Request } from "express";
+import { Response, Request } from 'express';
 
-import { Membership } from "../models/membership";
-import mongoose from "mongoose";
-export const createMembership = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+import { Membership } from '../models/membership';
+import mongoose from 'mongoose';
+export const createMembership = async (req: Request, res: Response): Promise<void> => {
   const { createdBy, type, phoneNumber, invoices, isActive, points } = req.body;
 
   try {
     if (!createdBy) {
-      res.status(401).json({ message: "Unauthorized personnel." });
+      res.status(401).json({ message: 'Unauthorized personnel.' });
       return;
     }
     if (!type || !phoneNumber || !isActive || !invoices || !points) {
-      res.status(400).json({ message: "All fields are required" });
+      res.status(400).json({ message: 'All fields are required' });
       return;
     }
     const membership = await Membership.create({
@@ -28,38 +25,31 @@ export const createMembership = async (
     });
 
     if (!membership) {
-      res.status(400).json({ message: "cannot created membership" });
+      res.status(400).json({ message: 'cannot created membership' });
       return;
     }
-    res.status(200).json({ message: "Created successfully", data: membership });
+    res.status(200).json({ message: 'Created successfully', data: membership });
   } catch (error) {
-    if (
-      error instanceof Error &&
-      "code" in error &&
-      (error as any).code === 11000
-    ) {
+    if (error instanceof Error && 'code' in error && (error as any).code === 11000) {
       res.status(400).json({
-        name: "phoneNumber",
+        name: 'phoneNumber',
         message: `This phone number is already registered`,
       });
       return;
     } else {
-      res.status(500).json({ message: "Internal server error" });
+      res.status(500).json({ message: 'Internal server error' });
       return;
     }
   }
 };
 
-export const getAllMembership = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const getAllMembership = async (req: Request, res: Response): Promise<void> => {
   const { search, type } = req.query;
   try {
     const filter: any = {};
     if (search) {
       filter.$or = [
-        { phoneNumber: { $regex: search, $options: "i" } }, // Case-insensitive partial match for name
+        { phoneNumber: { $regex: search, $options: 'i' } }, // Case-insensitive partial match for name
       ];
     }
     if (type) {
@@ -77,20 +67,17 @@ export const getAllMembership = async (
     res.status(400).json(error);
   }
 };
-export const getMembershipById = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const getMembershipById = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.body;
 
   try {
     if (!id) {
-      res.status(400).json({ message: "ID is required." });
+      res.status(400).json({ message: 'ID is required.' });
       return;
     }
     const member = await Membership.findById(id);
     if (!member) {
-      res.status(400).json({ message: "Member does not exist." });
+      res.status(400).json({ message: 'Member does not exist.' });
     }
     res.status(200).json({ data: member });
   } catch (error) {
@@ -98,38 +85,33 @@ export const getMembershipById = async (
   }
 };
 
-export const updateMembershipPointsById = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const updateMembershipPointsById = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      res.status(400).json({ message: "Invalid ID format" });
+      res.status(400).json({ message: 'Invalid ID format' });
       return;
     }
     const pointsToSet = req.body.points ?? 0;
     const roundedPoints = parseFloat(pointsToSet).toFixed(2);
-    const newInvoices = Array.isArray(req.body.invoice)
-      ? req.body.invoice
-      : [req.body.invoice]; // Convert string to array
+    const newInvoices = Array.isArray(req.body.invoice) ? req.body.invoice : [req.body.invoice]; // Convert string to array
     const newPoints = await Membership.findByIdAndUpdate(
       id,
       {
         $set: { points: roundedPoints }, // Increase points if they exist
         $push: { invoices: { $each: newInvoices } }, // Append new invoices without overwriting
       },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
     if (!newPoints) {
-      res.status(404).json({ message: "Member not found" });
+      res.status(404).json({ message: 'Member not found' });
       return;
     }
 
     res.status(200).json({ success: true, data: newPoints });
   } catch (error) {
-    console.error("Error updating product stock:", error);
-    res.status(500).json({ message: "Server error", error });
+    console.error('Error updating product stock:', error);
+    res.status(500).json({ message: 'Server error', error });
   }
 };

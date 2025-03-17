@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const role = new mongoose.Schema(
   {
@@ -26,7 +26,7 @@ const role = new mongoose.Schema(
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields
-  }
+  },
 );
 
-export const Role = mongoose.model("roles", role);
+export const Role = mongoose.model('roles', role);

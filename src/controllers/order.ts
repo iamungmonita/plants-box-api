@@ -1,17 +1,14 @@
-import { convertedDateEnd, convertedDateStart } from "../helpers";
-import { Membership } from "../models/membership";
-import { Order } from "../models/order";
-import { Response, Request } from "express";
-import { Product } from "../models/products";
+import { convertedDateEnd, convertedDateStart } from '../helpers';
+import { Membership } from '../models/membership';
+import { Order } from '../models/order';
+import { Response, Request } from 'express';
+import { Product } from '../models/products';
 
-export const createOrder = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const createOrder = async (req: Request, res: Response): Promise<void> => {
   const { items, profile, id, orderId, ...body } = req.body;
   try {
     if (!items || !Array.isArray(items) || items.length === 0) {
-      res.status(400).json({ message: "No order has been placed." });
+      res.status(400).json({ message: 'No order has been placed.' });
       return;
     }
     for (const item of items) {
@@ -38,7 +35,7 @@ export const createOrder = async (
           phoneNumber: member.phoneNumber,
         };
       } else {
-        res.status(404).json({ message: "No member found." });
+        res.status(404).json({ message: 'No member found.' });
         return;
       }
     }
@@ -53,7 +50,7 @@ export const createOrder = async (
     res.status(200).json({ data: order });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -62,14 +59,12 @@ export const getOrders = async (req: Request, res: Response): Promise<void> => {
   const filter: any = {};
 
   if (purchasedId) {
-    filter.purchasedId = { $regex: purchasedId, $options: "i" };
+    filter.purchasedId = { $regex: purchasedId, $options: 'i' };
   }
 
   if (start || end) {
     if (!start || !end) {
-      res
-        .status(400)
-        .json({ message: "Both start and end dates are required" });
+      res.status(400).json({ message: 'Both start and end dates are required' });
       return;
     }
 
@@ -77,7 +72,7 @@ export const getOrders = async (req: Request, res: Response): Promise<void> => {
     const parsedDateEnd = new Date(end as string);
 
     if (isNaN(parsedDateStart.getTime()) || isNaN(parsedDateEnd.getTime())) {
-      res.status(400).json({ message: "Invalid date format" });
+      res.status(400).json({ message: 'Invalid date format' });
       return;
     }
 
@@ -98,18 +93,15 @@ export const getOrders = async (req: Request, res: Response): Promise<void> => {
     res.status(200).json({ data: data });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
-export const fetchOrderByToday = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const fetchOrderByToday = async (req: Request, res: Response): Promise<void> => {
   const { date } = req.query; // Expecting 'date' to be in ISO format (e.g., '2025-02-28T00:00:00.000Z')
 
   if (!date) {
-    res.status(400).json({ message: "Date parameter is required" });
+    res.status(400).json({ message: 'Date parameter is required' });
     return;
   }
 
@@ -119,7 +111,7 @@ export const fetchOrderByToday = async (
 
     // Check if the date is valid
     if (isNaN(parsedDate.getTime())) {
-      res.status(400).json({ message: "Invalid date format" });
+      res.status(400).json({ message: 'Invalid date format' });
       return;
     }
 
@@ -146,48 +138,40 @@ export const fetchOrderByToday = async (
     res.status(200).json({ data });
   } catch (error) {
     console.error(error); // Log the error for debugging
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
-export const getPurchasedOrderByProductId = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const getPurchasedOrderByProductId = async (req: Request, res: Response): Promise<void> => {
   const { purchasedId } = req.params;
 
   try {
     const query: any = {};
     if (purchasedId) {
-      query["purchasedId"] = { $regex: purchasedId, $options: "i" };
+      query['purchasedId'] = { $regex: purchasedId, $options: 'i' };
     }
 
     const order = await Order.find(query);
     if (order.length === 0) {
-      res
-        .status(400)
-        .json({ message: "Order with this Purchased ID does not exist." });
+      res.status(400).json({ message: 'Order with this Purchased ID does not exist.' });
       return;
     }
     res.status(200).json({
       success: true,
-      message: "An order matched this ID.",
+      message: 'An order matched this ID.',
       data: order,
     });
   } catch (error) {
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
-export const fetchOrdersByRange = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const fetchOrdersByRange = async (req: Request, res: Response): Promise<void> => {
   const { range } = req.query; // Expected values: "weekly", "monthly", "yearly"
 
   if (!range) {
     res.status(400).json({
-      message: "Range parameter is required (weekly, monthly, yearly)",
+      message: 'Range parameter is required (weekly, monthly, yearly)',
     });
     return;
   }
@@ -197,12 +181,12 @@ export const fetchOrdersByRange = async (
 
   const today = new Date();
 
-  if (range === "weekly") {
+  if (range === 'weekly') {
     startDate = new Date(today);
     startDate.setDate(today.getDate() - 7); // Last 7 days
-  } else if (range === "monthly") {
+  } else if (range === 'monthly') {
     startDate = new Date(today.getFullYear(), today.getMonth(), 1); // Start of the current month
-  } else if (range === "yearly") {
+  } else if (range === 'yearly') {
     startDate = new Date(today.getFullYear(), 0, 1); // Start of the current year
   } else {
     res.status(400).json({
@@ -219,10 +203,7 @@ export const fetchOrdersByRange = async (
       },
     });
 
-    const totalAmount = orders.reduce(
-      (sum, order) => sum + order.totalAmount,
-      0
-    );
+    const totalAmount = orders.reduce((sum, order) => sum + order.totalAmount, 0);
 
     res.status(200).json({
       range,
@@ -232,6 +213,6 @@ export const fetchOrdersByRange = async (
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: 'Internal server error' });
   }
 };

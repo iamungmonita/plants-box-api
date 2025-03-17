@@ -1,5 +1,4 @@
-import { Router } from "express";
-const router = Router();
+import { Router } from 'express';
 
 import {
   createOrder,
@@ -7,12 +6,13 @@ import {
   fetchOrdersByRange,
   getOrders,
   getPurchasedOrderByProductId,
-} from "../controllers/order";
+} from '../controllers/order';
 
-router.post("/create", createOrder);
-router.get("/retrieve", getOrders);
-router.get("/retrieve/:purchasedId", getPurchasedOrderByProductId);
-router.get("/order-today", fetchOrderByToday);
-router.get("/order-range", fetchOrdersByRange);
+const router = Router();
+router.post('/create', createOrder);
+router.get('/retrieve', getOrders);
+router.get('/retrieve/:purchasedId', getPurchasedOrderByProductId);
+router.get('/order-today', fetchOrderByToday);
+router.get('/order-range', fetchOrdersByRange);
 
 export default router;
