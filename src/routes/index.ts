@@ -7,7 +7,7 @@ import orderRoute from './order';
 import productRoute from './product';
 import systemRoute from './system';
 
-class AppRouter {
+export class AppRouter {
   public router: Router;
 
   constructor() {
@@ -24,5 +24,3 @@ class AppRouter {
     this.router.use('/log', logRoute);
   }
 }
-
-export default new AppRouter().router;

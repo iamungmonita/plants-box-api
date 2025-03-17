@@ -2,8 +2,8 @@ import bcrypt from 'bcryptjs';
 import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 
-import { saveBase64Image } from '../';
 import { config } from '../config/config'; // Import the config file
+import { saveBase64Image } from '../helpers/file';
 import { User } from '../models/auth';
 import { setCookie } from '../utils/cookie';
 import { initialCount } from './log';
