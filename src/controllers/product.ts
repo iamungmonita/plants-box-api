@@ -15,6 +15,7 @@ export const createProduct = async (req: Request, res: Response) => {
       category,
       importedPrice,
       isDiscountable,
+      discountedPrice,
     } = req.body;
 
     if (!createdBy) {
@@ -55,6 +56,7 @@ export const createProduct = async (req: Request, res: Response) => {
       isDiscountable,
       createdBy,
       updatedBy: createdBy,
+      discountedPrice,
     };
 
     const product = await Product.create(productInfo);

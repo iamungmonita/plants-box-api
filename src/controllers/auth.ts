@@ -248,7 +248,7 @@ export const updateUserById = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const { createdBy, pictures, password, ...data } = req.body;
+    const { createdBy, pictures, ...data } = req.body;
     const user = await User.findById(id);
 
     if (!createdBy) {
@@ -264,10 +264,7 @@ export const updateUserById = async (
     if (createdBy) {
       updateData.updatedBy = createdBy; // Explicitly include createdBy
     }
-    if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      updateData.password = hashedPassword; // Update the password with the hashed value
-    }
+
     if (pictures === null || pictures === "") {
       updateData.pictures = null; // Explicitly clear the pictures field
     } else if (pictures && pictures.startsWith("data:image")) {
@@ -279,6 +276,7 @@ export const updateUserById = async (
     } else {
       updateData.pictures = pictures;
     }
+    updateData.password = user.password;
 
     const updatedUser = await User.findByIdAndUpdate(id, updateData, {
       new: true,
@@ -286,7 +284,7 @@ export const updateUserById = async (
     });
 
     if (updatedUser) {
-      res.status(200).json({ success: true, data: updatedUser });
+      res.status(200).json({ data: updatedUser });
     }
   } catch (error) {
     console.error("Error updating product stock:", error);

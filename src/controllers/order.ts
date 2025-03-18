@@ -3,12 +3,23 @@ import { Membership } from "../models/membership";
 import { Order } from "../models/order";
 import { Response, Request } from "express";
 import { Product } from "../models/products";
+import ExcelJS from "exceljs";
+import PDFDocument from "pdfkit";
+import fs from "fs";
+import path from "path";
+
+const downloadsDir = path.join(__dirname, "../downloads");
+
+if (!fs.existsSync(downloadsDir)) {
+  fs.mkdirSync(downloadsDir, { recursive: true });
+}
 
 export const createOrder = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const { items, profile, id, orderId, ...body } = req.body;
+  const { items, profile, phoneNumber, orderId, ...body } = req.body;
+  console.log(req.body);
   try {
     if (!items || !Array.isArray(items) || items.length === 0) {
       res.status(400).json({ message: "No order has been placed." });
@@ -30,11 +41,12 @@ export const createOrder = async (
       }
     }
     let memberInfo = null;
-    if (id) {
-      const member = await Membership.findById(id);
+    if (phoneNumber) {
+      const member = await Membership.findOne({ phoneNumber: phoneNumber });
       if (member) {
         memberInfo = {
           type: member.type,
+          points: member.points,
           phoneNumber: member.phoneNumber,
         };
       } else {
@@ -49,6 +61,7 @@ export const createOrder = async (
       createdBy: profile,
       ...body,
     });
+    console.log(order);
 
     res.status(200).json({ data: order });
   } catch (error) {
@@ -233,5 +246,77 @@ export const fetchOrdersByRange = async (
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const downloadOrdersExcel = async (req: Request, res: Response) => {
+  const { start, end } = req.query;
+
+  try {
+    const filter: any = {};
+
+    if (start || end) {
+      const parsedDateStart = new Date(start as string);
+      const parsedDateEnd = new Date(end as string);
+      if (isNaN(parsedDateStart.getTime()) && isNaN(parsedDateEnd.getTime())) {
+        res.status(400).json({ message: "Invalid date format" });
+        return;
+      }
+      if (start && end) {
+        filter.createdAt = {
+          $gte: convertedDateStart(parsedDateStart),
+          $lte: convertedDateEnd(parsedDateEnd),
+        };
+      } else if (start) {
+        filter.createdAt = {
+          $gte: convertedDateStart(parsedDateStart),
+        };
+      } else if (end) {
+        filter.createdAt = {
+          $lte: convertedDateEnd(parsedDateEnd),
+        };
+      }
+    }
+
+    const orders = await Order.find(filter); // Fetch all orders
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Orders");
+
+    // Define columns
+    worksheet.columns = [
+      { header: "Purchase ID", key: "purchasedId", width: 20 },
+      { header: "Payment Method", key: "paymentMethod", width: 15 },
+      { header: "Total Amount", key: "totalAmount", width: 15 },
+      { header: "Paid Amount", key: "paidAmount", width: 15 },
+      { header: "Change Amount", key: "changeAmount", width: 15 },
+      { header: "Created By", key: "createdBy", width: 20 },
+      { header: "Date", key: "createdAt", width: 20 },
+    ];
+
+    // Add rows
+    orders.forEach((order) => {
+      worksheet.addRow({
+        purchasedId: order.purchasedId,
+        paymentMethod: order.paymentMethod,
+        totalAmount: order.totalAmount,
+        paidAmount: order.paidAmount,
+        changeAmount: order.changeAmount,
+        createdBy: order.createdBy,
+        createdAt: new Date(order.createdAt).toLocaleString(),
+      });
+    });
+
+    // Save file temporarily
+    const filePath = path.join(__dirname, "../downloads/orders.xlsx");
+    await workbook.xlsx.writeFile(filePath);
+
+    // Send file to client
+    res.download(filePath, "orders.xlsx", (err) => {
+      if (err) console.error("File download error:", err);
+      fs.unlinkSync(filePath); // Delete after sending
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to generate Excel file" });
   }
 };
