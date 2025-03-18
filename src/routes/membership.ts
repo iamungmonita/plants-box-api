@@ -11,6 +11,6 @@ import {
 router.post("/create", createMembership);
 router.get("/retrieve", getAllMembership);
 router.get("/retrieve/:id", getMembershipById);
-router.put("/update-points/:id", updateMembershipPointsById);
+router.put("/update-points/:phone", updateMembershipPointsById);
 
 export default router;

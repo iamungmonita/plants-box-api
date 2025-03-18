@@ -13,6 +13,7 @@ import logRoute from "./routes/log";
 import path from "path";
 import fs from "fs";
 import { Role } from "./models/system";
+import multer from "multer";
 
 dotenv.config();
 
@@ -62,6 +63,21 @@ const uploadDir = path.join(__dirname, "../uploads");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
+
+// Set up uploads directory
+
+// Multer setup for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `products_${Date.now()}${ext}`);
+  },
+});
+
+const upload = multer({ storage: storage });
 
 export const saveBase64Image = (
   base64String: string,

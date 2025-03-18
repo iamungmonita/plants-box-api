@@ -106,23 +106,35 @@ export const createVoucher = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const { createdBy, ...data } = req.body;
+  const { createdBy, validFrom, validTo, ...data } = req.body;
+
   try {
     if (!createdBy) {
       res.status(401).json({ message: "Unauthorized personnel." });
       return;
     }
-    if (
-      !data.barcode ||
-      !data.discount ||
-      !data.validFrom ||
-      !data.validTo ||
-      !data.isActive
-    ) {
+
+    if (!data.barcode || !data.discount || !validFrom || !validTo) {
       res.status(400).json({ message: "These fields are required" });
       return;
     }
-    const voucher = await Voucher.create({ createdBy, ...data });
+
+    // Convert validFrom and validTo to Date objects
+    const now = new Date();
+    const fromDate = new Date(validFrom);
+    const toDate = new Date(validTo);
+
+    // Determine isActive status
+    const isActive = now >= fromDate && now <= toDate;
+
+    const voucher = await Voucher.create({
+      createdBy,
+      validFrom,
+      validTo,
+      isActive,
+      ...data,
+    });
+
     res.status(200).json({ data: voucher });
   } catch (error) {
     res.status(500).json({ message: "An unexpected error occurred" });
@@ -149,6 +161,31 @@ export const getAllVouchers = async (
       return;
     }
     res.status(200).json({ data: vouchers });
+  } catch (error) {
+    res.status(500).json({ message: "An unexpected error occurred" });
+  }
+};
+export const updateVoucherByBarcode = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { barcode } = req.params;
+  try {
+    if (!barcode) {
+      res.status(400).json({ message: "Barcode is required" });
+      return;
+    }
+    const updatedVoucher = await Voucher.findOneAndUpdate(
+      { barcode: { $regex: new RegExp(`^${barcode}$`, "i") } }, // Case-insensitive barcode match
+      { $set: { isActive: false } }, // Set isActive to false
+      { new: true } // Return the updated document
+    );
+    if (!updatedVoucher) {
+      res.status(404).json({ message: "Voucher not found" });
+      return;
+    }
+
+    res.json({ data: updatedVoucher });
   } catch (error) {
     res.status(500).json({ message: "An unexpected error occurred" });
   }

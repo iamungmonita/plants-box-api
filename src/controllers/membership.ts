@@ -1,7 +1,6 @@
 import { Response, Request } from "express";
 
 import { Membership } from "../models/membership";
-import mongoose from "mongoose";
 export const createMembership = async (
   req: Request,
   res: Response
@@ -19,7 +18,6 @@ export const createMembership = async (
     }
     const membership = await Membership.create({
       phoneNumber,
-
       type,
       isActive,
       invoices,
@@ -103,10 +101,10 @@ export const updateMembershipPointsById = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { id } = req.params;
+    const { phone } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      res.status(400).json({ message: "Invalid ID format" });
+    if (!phone) {
+      res.status(400).json({ message: "Phone Number is required" });
       return;
     }
     const pointsToSet = req.body.points ?? 0;
@@ -114,12 +112,15 @@ export const updateMembershipPointsById = async (
     const newInvoices = Array.isArray(req.body.invoice)
       ? req.body.invoice
       : [req.body.invoice]; // Convert string to array
-    const newPoints = await Membership.findByIdAndUpdate(
-      id,
+    const newPoints = await Membership.findOneAndUpdate(
+      { phoneNumber: phone },
       {
-        $set: { points: roundedPoints }, // Increase points if they exist
-        $push: { invoices: { $each: newInvoices } }, // Append new invoices without overwriting
+        $set: {
+          points: roundedPoints, // ✅ Set new points value
+          invoices: newInvoices, // ✅ Replace `invoices` array instead of appending
+        },
       },
+
       { new: true, runValidators: true }
     );
     if (!newPoints) {

@@ -37,6 +37,7 @@ const orderSchema = new mongoose.Schema(
     member: memberSchema,
     paidAmount: { type: Number, default: 0 },
     changeAmount: { type: Number, default: 0 },
+    others: { type: String },
   },
   { timestamps: true }
 );
