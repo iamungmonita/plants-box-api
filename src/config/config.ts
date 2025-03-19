@@ -1,10 +1,10 @@
-import dotenv from "dotenv";
+import dotenv from 'dotenv';
 
 dotenv.config();
 
 export const config = {
-  authTokenName: process.env.AUTH_TOKEN || "auth_token", // Default value if .env doesn't have AUTH_TOKEN
-  secretKey: process.env.JWT_SECRET || "default_secret_key", // Secret key for JWT
+  authTokenName: process.env.AUTH_TOKEN || 'auth_token', // Default value if .env doesn't have AUTH_TOKEN
+  secretKey: process.env.JWT_SECRET || 'default_secret_key', // Secret key for JWT
   tokenExpiration: (() => {
     const now = new Date();
     const midnight = new Date(now);

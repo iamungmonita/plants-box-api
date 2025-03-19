@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router } from 'express';
 const router = Router();
 
 import {
@@ -6,11 +6,11 @@ import {
   getAllMembership,
   getMembershipById,
   updateMembershipPointsById,
-} from "../controllers/membership";
+} from '../controllers/membership';
 
-router.post("/create", createMembership);
-router.get("/retrieve", getAllMembership);
-router.get("/retrieve/:id", getMembershipById);
-router.put("/update-points/:phone", updateMembershipPointsById);
+router.post('/create', createMembership);
+router.get('/retrieve', getAllMembership);
+router.get('/retrieve/:id', getMembershipById);
+router.put('/update-points/:phone', updateMembershipPointsById);
 
 export default router;

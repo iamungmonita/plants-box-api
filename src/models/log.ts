@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const log = new mongoose.Schema(
   {
@@ -8,9 +8,9 @@ const log = new mongoose.Schema(
   },
   {
     timestamps: true, // Automatically adds createdAt and updatedAt fields
-  }
+  },
 );
-export const Log = mongoose.model("logs", log);
+export const Log = mongoose.model('logs', log);
 
 const countLog = new mongoose.Schema(
   {
@@ -18,7 +18,7 @@ const countLog = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-export const CountLog = mongoose.model("count_logs", countLog);
+export const CountLog = mongoose.model('count_logs', countLog);

@@ -1,4 +1,4 @@
-import { CountLog } from "../models/log";
+import { CountLog } from '../models/log';
 
 export const convertedDateStart = (parsedDate: Date) => {
   const converted = new Date(
@@ -8,7 +8,7 @@ export const convertedDateStart = (parsedDate: Date) => {
     0,
     0,
     0,
-    0
+    0,
   );
   return converted;
 };
@@ -20,7 +20,7 @@ export const convertedDateEnd = (parsedDate: Date) => {
     23,
     59,
     59,
-    999
+    999,
   );
   return converted;
 };

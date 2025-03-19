@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const orderItemSchema = new mongoose.Schema(
   {
@@ -11,7 +11,7 @@ const orderItemSchema = new mongoose.Schema(
     isDiscountable: { type: Boolean, required: true },
     convertedPoints: { type: Number, required: true },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const memberSchema = new mongoose.Schema(
@@ -20,7 +20,7 @@ const memberSchema = new mongoose.Schema(
     type: { type: String },
     phoneNumber: { type: String },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const orderSchema = new mongoose.Schema(
@@ -39,7 +39,7 @@ const orderSchema = new mongoose.Schema(
     changeAmount: { type: Number, default: 0 },
     others: { type: String },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-export const Order = mongoose.model("Order", orderSchema);
+export const Order = mongoose.model('Order', orderSchema);

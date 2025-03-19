@@ -1,5 +1,5 @@
-const cookie = require("cookie");
-import { Response } from "express";
+const cookie = require('cookie');
+import { Response } from 'express';
 
 /**
  * Utility function to set a cookie.
@@ -12,15 +12,15 @@ export const setCookie = (
   res: Response,
   name: string,
   value: string,
-  options: any // `cookie.serialize` options are not strongly typed with `require`
+  options: any, // `cookie.serialize` options are not strongly typed with `require`
 ) => {
   res.setHeader(
-    "Set-Cookie",
+    'Set-Cookie',
     cookie.serialize(name, value, {
-      sameSite: "strict",
-      path: "/",
-      secure: process.env.NODE_ENV === "production",
+      sameSite: 'strict',
+      path: '/',
+      secure: process.env.NODE_ENV === 'production',
       ...options,
-    })
+    }),
   );
 };

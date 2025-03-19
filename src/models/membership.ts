@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const membership = new mongoose.Schema(
   {
@@ -34,7 +34,7 @@ const membership = new mongoose.Schema(
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields
-  }
+  },
 );
 
-export const Membership = mongoose.model("membership", membership);
+export const Membership = mongoose.model('membership', membership);
