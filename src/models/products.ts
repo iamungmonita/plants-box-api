@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const StockUpdateSchema = new mongoose.Schema(
   {
@@ -8,7 +8,7 @@ const StockUpdateSchema = new mongoose.Schema(
   },
   {
     timestamps: true, // This enables createdAt and updatedAt for stock updates
-  }
+  },
 );
 
 const product = new mongoose.Schema(
@@ -30,7 +30,7 @@ const product = new mongoose.Schema(
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields
-  }
+  },
 );
 
-export const Product = mongoose.model("Product", product);
+export const Product = mongoose.model('Product', product);

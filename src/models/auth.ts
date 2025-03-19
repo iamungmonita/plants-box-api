@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const user = new mongoose.Schema(
   {
@@ -50,7 +50,7 @@ const user = new mongoose.Schema(
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields
-  }
+  },
 );
 
-export const User = mongoose.model("users", user);
+export const User = mongoose.model('users', user);

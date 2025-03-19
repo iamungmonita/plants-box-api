@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const roleSchema = new mongoose.Schema(
   {
@@ -26,24 +26,16 @@ const roleSchema = new mongoose.Schema(
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields
-  }
+  },
 );
 
-const Role = mongoose.model("Role", roleSchema); // Singular, as Mongoose auto-pluralizes it
+const Role = mongoose.model('Role', roleSchema); // Singular, as Mongoose auto-pluralizes it
 
 const expenseSchema = new mongoose.Schema(
   {
     category: {
       type: String,
-      enum: [
-        "Supplies",
-        "Inventory",
-        "Utilities",
-        "Rent",
-        "Salaries",
-        "Marketing",
-        "Other",
-      ],
+      enum: ['Supplies', 'Inventory', 'Utilities', 'Rent', 'Salaries', 'Marketing', 'Other'],
       required: true,
     },
     amount: {
@@ -73,10 +65,10 @@ const expenseSchema = new mongoose.Schema(
       trim: true,
     },
   },
-  { timestamps: true } // Automatically adds createdAt and updatedAt
+  { timestamps: true }, // Automatically adds createdAt and updatedAt
 );
 
-const Expense = mongoose.model("Expense", expenseSchema);
+const Expense = mongoose.model('Expense', expenseSchema);
 
 const voucherSchema = new mongoose.Schema(
   {
@@ -89,7 +81,7 @@ const voucherSchema = new mongoose.Schema(
     discount: {
       type: Number,
       required: true,
-      min: [0, "Discount must be a positive number"], // Enforces a positive discount
+      min: [0, 'Discount must be a positive number'], // Enforces a positive discount
     },
     validFrom: {
       type: Date,
@@ -108,10 +100,10 @@ const voucherSchema = new mongoose.Schema(
       required: true,
     },
   },
-  { timestamps: true } // Automatically adds createdAt and updatedAt
+  { timestamps: true }, // Automatically adds createdAt and updatedAt
 );
 
-const Voucher = mongoose.model("Voucher", voucherSchema);
+const Voucher = mongoose.model('Voucher', voucherSchema);
 
 // Export using ES6
 export { Expense, Role, Voucher };

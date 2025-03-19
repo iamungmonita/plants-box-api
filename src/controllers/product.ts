@@ -1,6 +1,7 @@
-import { Request, Response } from "express";
-import { saveBase64Image } from "..";
-import { Product } from "../models/products";
+import { Request, Response } from 'express';
+
+import { saveBase64Image } from '../helpers/file';
+import { Product } from '../models/products';
 
 export const createProduct = async (req: Request, res: Response) => {
   try {
@@ -19,7 +20,7 @@ export const createProduct = async (req: Request, res: Response) => {
     } = req.body;
 
     if (!createdBy) {
-      res.status(401).json({ message: "Unauthorized personnel." });
+      res.status(401).json({ message: 'Unauthorized personnel.' });
       return;
     }
 
@@ -33,14 +34,14 @@ export const createProduct = async (req: Request, res: Response) => {
       !isActive ||
       !barcode
     ) {
-      res.status(400).json({ error: "Missing required fields" });
+      res.status(400).json({ error: 'Missing required fields' });
       return;
     }
 
     // Save images and return file paths
-    let savedImages = ""; // Declare savedImages in a broader scope
+    let savedImages = ''; // Declare savedImages in a broader scope
 
-    if (pictures && pictures !== "") {
+    if (pictures && pictures !== '') {
       savedImages = await saveBase64Image(pictures, `product_${Date.now()}`);
     }
 
@@ -62,30 +63,27 @@ export const createProduct = async (req: Request, res: Response) => {
     const product = await Product.create(productInfo);
 
     if (!product) {
-      res.status(400).json({ message: "cannot create product" });
+      res.status(400).json({ message: 'cannot create product' });
     }
     res.status(200).json({
       success: true,
       data: product,
     });
   } catch (error) {
-    console.error("Error uploading product:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error('Error uploading product:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
-export const getAllProducts = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const getAllProducts = async (req: Request, res: Response): Promise<void> => {
   const { category, search } = req.query;
   try {
     const filter: any = {};
 
     if (search) {
       filter.$or = [
-        { name: { $regex: search, $options: "i" } }, // Case-insensitive partial match for name
-        { barcode: { $regex: search, $options: "i" } }, // Case-insensitive partial match for barcode
+        { name: { $regex: search, $options: 'i' } }, // Case-insensitive partial match for name
+        { barcode: { $regex: search, $options: 'i' } }, // Case-insensitive partial match for barcode
       ];
     }
 
@@ -99,10 +97,7 @@ export const getAllProducts = async (
     res.status(400).json(error);
   }
 };
-export const getBestSellingProducts = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const getBestSellingProducts = async (req: Request, res: Response): Promise<void> => {
   try {
     const products = await Product.find().sort({ soldQty: -1 });
     res.status(200).json({ success: true, data: products });
@@ -111,72 +106,63 @@ export const getBestSellingProducts = async (
   }
 };
 
-export const getProductById = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const getProductById = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   try {
     const product = await Product.findById(id);
     if (!product) {
-      res.status(400).json({ message: "cannot find the product" });
+      res.status(400).json({ message: 'cannot find the product' });
     }
     res.status(200).json({ success: true, data: product });
   } catch (error) {
     res.status(400).json(error);
   }
 };
-export const updateProductQuantityById = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const updateProductQuantityById = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const { qty } = req.body;
-    if (typeof qty !== "number" || qty < 0) {
-      res.status(400).json({ message: "Invalid stock value" });
+    if (typeof qty !== 'number' || qty < 0) {
+      res.status(400).json({ message: 'Invalid stock value' });
       return;
     }
 
     const product = await Product.findById(id);
     if (!product) {
-      res.status(400).json({ message: "Cannot find product" });
+      res.status(400).json({ message: 'Cannot find product' });
       return;
     }
 
     if (product.stock < qty) {
-      res.status(400).json({ message: "product stock is lower than demand." });
+      res.status(400).json({ message: 'product stock is lower than demand.' });
       return;
     } // Return null if stock is less than qty
 
     const updatedProduct = await Product.findByIdAndUpdate(
       id,
       { $inc: { stock: -qty, soldQty: qty } },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     res.status(200).json({ success: true, data: updatedProduct });
   } catch (error) {
-    console.error("Error updating product stock:", error);
-    res.status(500).json({ message: "Server error", error });
+    console.error('Error updating product stock:', error);
+    res.status(500).json({ message: 'Server error', error });
   }
 };
 
-export const updateProductDetailsById = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const updateProductDetailsById = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const { pictures, stock, createdBy, ...data } = req.body;
     const product = await Product.findById(id);
 
     if (!createdBy) {
-      res.status(200).json({ message: "Unauthorized personnel." });
+      res.status(200).json({ message: 'Unauthorized personnel.' });
       return;
     }
     if (!product) {
-      res.status(404).json({ message: "Product not found" });
+      res.status(404).json({ message: 'Product not found' });
       return;
     }
 
@@ -194,13 +180,10 @@ export const updateProductDetailsById = async (
       updateData.$push = { updatedCount: newUpdate };
     }
 
-    if (pictures === null || pictures === "") {
+    if (pictures === null || pictures === '') {
       updateData.pictures = null; // Explicitly clear the pictures field
-    } else if (pictures && pictures.startsWith("data:image")) {
-      const savedImage = await saveBase64Image(
-        pictures,
-        `product_${Date.now()}`
-      );
+    } else if (pictures && pictures.startsWith('data:image')) {
+      const savedImage = await saveBase64Image(pictures, `product_${Date.now()}`);
       updateData.pictures = savedImage; // Update with the new image
     } else {
       updateData.pictures = pictures;
@@ -215,7 +198,7 @@ export const updateProductDetailsById = async (
       res.status(200).json({ success: true, data: updatedProduct });
     }
   } catch (error) {
-    console.error("Error updating product stock:", error);
-    res.status(500).json({ message: "Server error", error });
+    console.error('Error updating product stock:', error);
+    res.status(500).json({ message: 'Server error', error });
   }
 };
