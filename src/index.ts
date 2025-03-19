@@ -22,7 +22,14 @@ class Server {
 
   #config() {
     dotenv.config();
-    this.#app.use(cors());
+
+    const corsOption = {
+      origin: process.env.ALLOW_CORS ?? 'http://127.0.0.1:3000',
+      methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow specific HTTP methods
+      allowedHeaders: ['Content-Type', 'Authorization'],
+      credentials: true,
+    };
+    this.#app.use(cors(corsOption));
 
     // set port server
     this.#app.set('port', process.env.PORT ?? 3000);
