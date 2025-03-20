@@ -1,7 +1,6 @@
-import express, { Router } from 'express';
+import { Router } from 'express';
 
 import { FileController } from '../controllers/FileController';
-import { wrapAsync } from '../helpers/file';
 import { FileMulter } from '../middlewares';
 
 export class FileRoute {
