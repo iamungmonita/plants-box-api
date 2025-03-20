@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "cross-env NODE_OPTIONS='--inspect' ts-node src/index.ts",
+    "dev": "rm -rf dist && tsc-watch --onSuccess \"npm run inspect\"",
+    "inspect": "node --inspect=9449 ./dist/index.js",
     "format": "prettier --write 'src/**/*.ts'",
     "lint": "eslint 'src/**/*.ts' --fix",
-    "build": "tsc",
+    "build": "rm -rf dist && tsc",
     "start": "nodemon --exec ts-node src/index.ts"
   },
   "keywords": [],
@@ -49,6 +50,7 @@
     "eslint-plugin-prettier": "^5.2.3",
     "prettier": "^3.5.3",
     "ts-node": "^10.9.2",
+    "tsc-watch": "^6.2.1",
     "typescript": "^5.8.2"
   },
   "description": ""

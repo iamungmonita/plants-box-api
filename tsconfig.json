@@ -5,8 +5,13 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
+    "baseUrl": ".",
+    "sourceMap": true,
+    "forceConsistentCasingInFileNames": true,
+    "alwaysStrict": true,
     "esModuleInterop": true,
     "typeRoots": ["./src/@types", "./node_modules/@types"]
   },
-  "include": ["src", "src/@types/**/*"] // Make sure to include your types folder]
+  "exclude": ["node_modules"],
+  "include": ["src/**/*", "src/@types/**/*"] // Make sure to include your types folder]
 }
