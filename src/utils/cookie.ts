@@ -19,7 +19,7 @@ export const setCookie = (
     cookie.serialize(name, value, {
       sameSite: 'strict',
       path: '/',
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === 'development',
       ...options,
     }),
   );

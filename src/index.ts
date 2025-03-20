@@ -24,7 +24,7 @@ class Server {
     dotenv.config();
 
     const corsOption = {
-      origin: process.env.ALLOW_CORS ?? 'http://127.0.0.1:3000',
+      origin: process.env.ALLOW_CORS?.split(',') ?? ['http://127.0.0.1:3000'],
       methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow specific HTTP methods
       allowedHeaders: ['Content-Type', 'Authorization'],
       credentials: true,

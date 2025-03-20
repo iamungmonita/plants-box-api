@@ -8,8 +8,9 @@ import {
   updateProductDetailsById,
   getBestSellingProducts,
 } from '../controllers/product';
+import { authentication } from '../middlewares/auth';
 
-router.post('/create', createProduct);
+router.post('/create', authentication, createProduct);
 router.get('/retrieve', getAllProducts);
 router.get('/best-sellers', getBestSellingProducts);
 router.get('/:id', getProductById);
