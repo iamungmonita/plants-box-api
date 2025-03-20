@@ -5,6 +5,8 @@ import mongoose, { ConnectOptions } from 'mongoose';
 import morgan from 'morgan';
 import * as path from 'path';
 
+import { HttpErrorCode } from './enums';
+import { HttpError, InternalServerError, NotFoundError } from './libs';
 import { AppRouter } from './routes';
 
 class Server {
@@ -50,9 +52,37 @@ class Server {
 
   #initRoutes() {
     const { router } = new AppRouter();
-
     this.#app.use('/', router);
     this.#app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+    this.#handlerError();
+  }
+
+  #handlerError() {
+    // catch 404 and forward to error handler
+    this.#app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+      const err = new NotFoundError('Not found');
+      next(err);
+    });
+
+    // catch exceptions
+    this.#app.use(
+      (err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+        // Handle known exceptions
+        if (err instanceof HttpError) {
+          const httpError = err;
+          res.status(httpError.statusCode).json(httpError.toJSON());
+          return; // Explicitly return to avoid further processing
+        }
+
+        // Handle uncaught or unknown exceptions
+        if (err instanceof Error) {
+          const error = new InternalServerError(`Uncaught Exception: ${err.message}`);
+          res.status(HttpErrorCode.InternalServerError).json(error.toJSON());
+          return;
+        }
+        next(err);
+      },
+    );
   }
 
   public start() {

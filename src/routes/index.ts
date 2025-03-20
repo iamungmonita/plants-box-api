@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
 import authRoute from './auth';
+import { FileRoute } from './file';
 import logRoute from './log';
 import membershipRoute from './membership';
 import orderRoute from './order';
@@ -23,5 +24,6 @@ export class AppRouter {
     this.router.use('/membership', membershipRoute);
     this.router.use('/product', productRoute);
     this.router.use('/log', logRoute);
+    this.router.use('/file', new FileRoute().router);
   }
 }
