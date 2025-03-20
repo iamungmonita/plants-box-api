@@ -1,6 +1,5 @@
 import bcrypt from 'bcryptjs';
 import { NextFunction, Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
 
 import { config } from '../config/config'; // Import the config file
 import { saveBase64Image } from '../helpers/file';
@@ -8,6 +7,7 @@ import { User } from '../models/auth';
 import { setCookie } from '../utils/cookie';
 import { initialCount } from './log';
 import { Token } from '../helpers/token';
+import { BadRequestError, MissingParamError } from '../libs';
 
 export const signUp = async (req: Request, res: Response): Promise<void> => {
   const { firstName, lastName, role, codes, email, password, phoneNumber, isActive, pictures } =
@@ -62,47 +62,32 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const signIn = async (req: Request, res: Response): Promise<void> => {
-  const { email, password } = req.body;
-  console.log(req.body);
+export const signIn = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    if (!email || !password) {
-      res.status(400).json({ message: 'All fields are required' });
-      return;
+    const { email, password } = req.body;
+    if (!email) {
+      throw new MissingParamError('email');
+    }
+    if (!password) {
+      throw new MissingParamError('password');
     }
 
-    const admin = await User.findOne({ email });
-    if (!admin) {
-      res.status(401).json({ name: 'email', message: 'Cannot find the admin' });
-      return;
+    const user = await User.findOne({ email, isActive: true });
+    if (!user) {
+      throw new BadRequestError('User does not existed');
+    }
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      throw new BadRequestError('Invalid Password');
     }
 
-    const match = await bcrypt.compare(password, admin.password);
-    if (!match) {
-      res.status(401).json({ name: 'password', message: 'The password does not match' });
-      return;
-    }
-    const initialLog = await initialCount(admin._id.toString());
-    const token = new Token(admin._id.toString(), admin.firstName).generateToken(config.secretKey);
+    const initialLog = await initialCount(user._id.toString());
+    const token = new Token(user._id.toString(), user.firstName).generateToken(config.secretKey);
+    const data = { token, initialLog };
 
-    const data = {
-      token,
-      initialLog,
-    };
-
-    res.status(200).json({ data: data });
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      console.error('Error during sign-in:', {
-        message: error.message,
-        stack: error.stack,
-        email,
-        time: new Date().toISOString(),
-      });
-    } else {
-      console.error('An unknown error occurred:', error);
-    }
-    res.status(500).json({ message: 'Internal server error' });
+    res.json({ data: data });
+  } catch (error) {
+    next(error);
   }
 };
 

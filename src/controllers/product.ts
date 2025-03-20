@@ -1,11 +1,10 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 
 import { saveBase64Image } from '../helpers/file';
 import { Product } from '../models/products';
-import { Admin } from 'mongodb';
 import { User } from '../models/auth';
 
-export const createProduct = async (req: Request, res: Response) => {
+export const createProduct = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const {
       barcode,
@@ -34,11 +33,6 @@ export const createProduct = async (req: Request, res: Response) => {
     }
 
     // Save images and return file paths
-    let savedImages = ''; // Declare savedImages in a broader scope
-
-    if (pictures && pictures !== '') {
-      savedImages = await saveBase64Image(pictures, `product_${Date.now()}`);
-    }
     const admin = await User.findById(req.admin);
 
     if (!admin) {
@@ -50,14 +44,14 @@ export const createProduct = async (req: Request, res: Response) => {
       name,
       price,
       importedPrice,
-      pictures: savedImages,
+      pictures,
       stock,
       category,
       barcode,
       isActive,
       isDiscountable,
       updatedBy: admin.firstName,
-      createdBy: admin.firstName,
+      createdBy: admin._id,
     };
 
     const product = await Product.create(productInfo);
@@ -70,12 +64,11 @@ export const createProduct = async (req: Request, res: Response) => {
       data: product,
     });
   } catch (error) {
-    console.error('Error uploading product:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    next(error);
   }
 };
 
-export const getAllProducts = async (req: Request, res: Response): Promise<void> => {
+export const getAllProducts = async (req: Request, res: Response, next: NextFunction) => {
   const { category, search } = req.query;
   try {
     const filter: any = {};
@@ -90,23 +83,24 @@ export const getAllProducts = async (req: Request, res: Response): Promise<void>
     if (category) {
       Object.assign(filter, { category }); // Exact match since it's an autocomplete value
     }
-    const products = await Product.find(filter);
+    const products = await Product.find(filter).populate('createdBy');
 
     res.status(200).json({ success: true, data: products });
   } catch (error) {
-    res.status(400).json(error);
+    next(error);
   }
 };
-export const getBestSellingProducts = async (req: Request, res: Response): Promise<void> => {
+
+export const getBestSellingProducts = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const products = await Product.find().sort({ soldQty: -1 });
     res.status(200).json({ success: true, data: products });
   } catch (error) {
-    res.status(400).json(error);
+    next(error);
   }
 };
 
-export const getProductById = async (req: Request, res: Response): Promise<void> => {
+export const getProductById = async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
   try {
     const product = await Product.findById(id);
@@ -115,10 +109,15 @@ export const getProductById = async (req: Request, res: Response): Promise<void>
     }
     res.status(200).json({ success: true, data: product });
   } catch (error) {
-    res.status(400).json(error);
+    next(error);
   }
 };
-export const updateProductQuantityById = async (req: Request, res: Response): Promise<void> => {
+
+export const updateProductQuantityById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { id } = req.params;
     const { qty } = req.body;
@@ -146,12 +145,11 @@ export const updateProductQuantityById = async (req: Request, res: Response): Pr
 
     res.status(200).json({ success: true, data: updatedProduct });
   } catch (error) {
-    console.error('Error updating product stock:', error);
-    res.status(500).json({ message: 'Server error', error });
+    next(error);
   }
 };
 
-export const updateProductDetailsById = async (req: Request, res: Response): Promise<void> => {
+export const updateProductDetailsById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const { pictures, stock, createdBy, ...data } = req.body;
@@ -198,7 +196,6 @@ export const updateProductDetailsById = async (req: Request, res: Response): Pro
       res.status(200).json({ success: true, data: updatedProduct });
     }
   } catch (error) {
-    console.error('Error updating product stock:', error);
-    res.status(500).json({ message: 'Server error', error });
+    next(error);
   }
 };

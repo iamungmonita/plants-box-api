@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
 const StockUpdateSchema = new mongoose.Schema(
   {
@@ -14,8 +14,6 @@ const StockUpdateSchema = new mongoose.Schema(
 const product = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true, minlength: 3 },
-    createdBy: { type: String },
-    updatedBy: { type: String },
     price: { type: Number, required: true, min: 0 }, // Changed to Number
     importedPrice: { type: Number, required: true, min: 0 }, // Changed to Number
     pictures: { type: String }, // Array of image URLs/paths
@@ -26,6 +24,16 @@ const product = new mongoose.Schema(
     barcode: { type: String, required: true, unique: true, trim: true },
     updatedCount: [StockUpdateSchema],
     soldQty: { type: Number, default: 0 },
+    updatedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'users', // Reference to the User collection
+      required: true,
+    },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'users', // Reference to the User collection
+      required: true,
+    },
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields
