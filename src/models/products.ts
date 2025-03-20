@@ -26,7 +26,6 @@ const product = new mongoose.Schema(
     barcode: { type: String, required: true, unique: true, trim: true },
     updatedCount: [StockUpdateSchema],
     soldQty: { type: Number, default: 0 },
-    discountedPrice: { type: Number, required: true, min: 0 }, // Changed to Number
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields

@@ -7,48 +7,12 @@ import { saveBase64Image } from '../helpers/file';
 import { User } from '../models/auth';
 import { setCookie } from '../utils/cookie';
 import { initialCount } from './log';
-
-class TokenClass {
-  id: string;
-  firstName: string;
-  lastName: string;
-
-  constructor(id: string, firstName: string, lastName: string) {
-    this.id = id;
-    this.lastName = lastName;
-    this.firstName = firstName;
-  }
-
-  generateToken = (secretKey: string) => {
-    const token = jwt.sign(
-      { id: this.id, firstName: this.firstName, lastName: this.lastName },
-      secretKey,
-      {
-        expiresIn: config.tokenExpiration,
-      },
-    );
-    return token;
-  };
-}
+import { Token } from '../helpers/token';
 
 export const signUp = async (req: Request, res: Response): Promise<void> => {
-  const {
-    firstName,
-    lastName,
-    role,
-    codes,
-    email,
-    password,
-    phoneNumber,
-    isActive,
-    createdBy,
-    pictures,
-  } = req.body;
+  const { firstName, lastName, role, codes, email, password, phoneNumber, isActive, pictures } =
+    req.body;
   try {
-    if (!createdBy) {
-      res.status(401).json({ message: 'unauthorized personnel.' });
-      return;
-    }
     if (!firstName || !lastName || !role || !email || !password || !phoneNumber || !codes) {
       res.status(400).json({ message: 'All fields are required' });
       return;
@@ -60,6 +24,11 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
     if (pictures && pictures !== '') {
       savedImages = await saveBase64Image(pictures, `product_${Date.now()}`);
     }
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      res.status(401).json({ message: 'unauthorized personnel' });
+      return;
+    }
     const user = await User.create({
       email,
       phoneNumber,
@@ -70,7 +39,7 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
       isActive,
       codes,
       pictures: savedImages,
-      createdBy,
+      createdBy: admin.firstName,
     });
 
     if (!user) {
@@ -95,6 +64,7 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
 
 export const signIn = async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
+  console.log(req.body);
   try {
     if (!email || !password) {
       res.status(400).json({ message: 'All fields are required' });
@@ -112,19 +82,12 @@ export const signIn = async (req: Request, res: Response): Promise<void> => {
       res.status(401).json({ name: 'password', message: 'The password does not match' });
       return;
     }
-    const count = await initialCount(admin._id.toString());
-    const token = new TokenClass(
-      admin._id.toString(),
-      admin.firstName,
-      admin.lastName,
-    ).generateToken(config.secretKey);
+    const initialLog = await initialCount(admin._id.toString());
+    const token = new Token(admin._id.toString(), admin.firstName).generateToken(config.secretKey);
 
-    setCookie(res, config.authTokenName, token, {
-      maxAge: config.tokenExpiration,
-    });
     const data = {
-      admin,
-      count,
+      token,
+      initialLog,
     };
 
     res.status(200).json({ data: data });
@@ -151,32 +114,6 @@ export const signOut = async (req: Request, res: Response): Promise<void> => {
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ message: 'Internal server error' });
-    return;
-  }
-};
-
-export const authentication = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> => {
-  const authTokenName = process.env.AUTH_TOKEN || 'auth_token';
-  const token = req.cookies?.[authTokenName];
-  if (!token) {
-    res.status(401).json({ message: 'No authentication token provided' });
-    return;
-  }
-
-  try {
-    const decoded = jwt.verify(token, config.secretKey);
-
-    if (typeof decoded === 'object' && 'id' in decoded) {
-      req.admin = decoded.id; // Attach decoded token payload to `req.admin`
-    }
-    next();
-  } catch (error) {
-    console.error('Token verification failed:', error);
-    res.status(403).json({ message: 'Invalid token' });
     return;
   }
 };
@@ -221,22 +158,18 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
 export const updateUserById = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { createdBy, pictures, ...data } = req.body;
+    const { pictures, ...data } = req.body;
     const user = await User.findById(id);
+    console.log(req.body);
 
-    if (!createdBy) {
-      res.status(200).json({ message: 'Unauthorized personnel.' });
-      return;
-    }
     if (!user) {
       res.status(404).json({ message: 'Product not found' });
       return;
     }
 
     const updateData = { ...data };
-    if (createdBy) {
-      updateData.updatedBy = createdBy; // Explicitly include createdBy
-    }
+    const admin = await User.findById(req.admin);
+    updateData.updatedBy = admin?.firstName; // Explicitly include createdBy
 
     if (pictures === null || pictures === '') {
       updateData.pictures = null; // Explicitly clear the pictures field
@@ -246,13 +179,13 @@ export const updateUserById = async (req: Request, res: Response): Promise<void>
     } else {
       updateData.pictures = pictures;
     }
-    updateData.password = user.password;
+    // updateData.password = user.password;
 
     const updatedUser = await User.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
     });
-
+    console.log(updatedUser);
     if (updatedUser) {
       res.status(200).json({ data: updatedUser });
     }

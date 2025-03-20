@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 
 import { saveBase64Image } from '../helpers/file';
 import { Product } from '../models/products';
+import { Admin } from 'mongodb';
+import { User } from '../models/auth';
 
 export const createProduct = async (req: Request, res: Response) => {
   try {
@@ -9,20 +11,13 @@ export const createProduct = async (req: Request, res: Response) => {
       barcode,
       isActive,
       name,
-      createdBy,
       price,
       pictures,
       stock,
       category,
       importedPrice,
       isDiscountable,
-      discountedPrice,
     } = req.body;
-
-    if (!createdBy) {
-      res.status(401).json({ message: 'Unauthorized personnel.' });
-      return;
-    }
 
     if (
       !name ||
@@ -44,6 +39,12 @@ export const createProduct = async (req: Request, res: Response) => {
     if (pictures && pictures !== '') {
       savedImages = await saveBase64Image(pictures, `product_${Date.now()}`);
     }
+    const admin = await User.findById(req.admin);
+
+    if (!admin) {
+      res.status(401).json({ message: 'unauthorized personnel.' });
+      return;
+    }
 
     const productInfo = {
       name,
@@ -55,9 +56,8 @@ export const createProduct = async (req: Request, res: Response) => {
       barcode,
       isActive,
       isDiscountable,
-      createdBy,
-      updatedBy: createdBy,
-      discountedPrice,
+      updatedBy: admin.firstName,
+      createdBy: admin.firstName,
     };
 
     const product = await Product.create(productInfo);
