@@ -3,13 +3,13 @@ import { NextFunction, Request, Response } from 'express';
 
 import { config } from '../config/config'; // Import the config file
 import { saveBase64Image } from '../helpers/file';
+import { Token } from '../helpers/token';
+import { BadRequestError, MissingParamError } from '../libs';
 import { User } from '../models/auth';
 import { setCookie } from '../utils/cookie';
 import { initialCount } from './log';
-import { Token } from '../helpers/token';
-import { BadRequestError, MissingParamError } from '../libs';
 
-export const signUp = async (req: Request, res: Response): Promise<void> => {
+export const signUp = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const { firstName, lastName, role, codes, email, password, phoneNumber, isActive, pictures } =
     req.body;
   try {
@@ -18,17 +18,17 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    let savedImages = '';
-
-    if (pictures && pictures !== '') {
-      savedImages = await saveBase64Image(pictures, `product_${Date.now()}`);
-    }
-    const admin = await User.findById(req.admin);
+    const admin = await User.findOne({ _id: req.admin, isActive: true });
     if (!admin) {
-      res.status(401).json({ message: 'unauthorized personnel' });
-      return;
+      throw new BadRequestError('Unauthorized Personnel ');
     }
+
+    const existedUser = await User.findOne({ email, isActive: true });
+    if (existedUser) {
+      throw new BadRequestError('This email already registered');
+    }
+
+    const hashedPassword = bcrypt.hash(password, 10);
     const user = await User.create({
       email,
       phoneNumber,
@@ -38,27 +38,13 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
       password: hashedPassword,
       isActive,
       codes,
-      pictures: savedImages,
-      createdBy: admin.firstName,
+      pictures: pictures,
+      createdBy: admin,
     });
 
-    if (!user) {
-      res.status(400).json({ message: 'Error creating user.' });
-      return;
-    }
-
-    res.status(200).json({ data: user });
+    res.json(user);
   } catch (error) {
-    if (error instanceof Error && 'code' in error && (error as any).code === 11000) {
-      res.status(400).json({
-        name: 'email',
-        message: `This email already registered`,
-      });
-      return;
-    } else {
-      res.status(500).json({ message: 'Internal server error' });
-      return;
-    }
+    next(error);
   }
 };
 
