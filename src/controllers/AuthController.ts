@@ -1,11 +1,9 @@
 import bcrypt from 'bcryptjs';
 import { NextFunction, Request, Response } from 'express';
-
 import { config } from '../config/config'; // Import the config file
 import { saveBase64Image } from '../helpers/file';
 import { User } from '../models/auth';
-import { setCookie } from '../utils/cookie';
-import { initialCount } from './log';
+import { initialCount } from './LogController';
 import { Token } from '../helpers/token';
 import { BadRequestError, MissingParamError } from '../libs';
 
@@ -13,6 +11,12 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
   const { firstName, lastName, role, codes, email, password, phoneNumber, isActive, pictures } =
     req.body;
   try {
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      res.status(401).json({ message: 'unauthorized personnel' });
+      return;
+    }
+
     if (!firstName || !lastName || !role || !email || !password || !phoneNumber || !codes) {
       res.status(400).json({ message: 'All fields are required' });
       return;
@@ -24,11 +28,7 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
     if (pictures && pictures !== '') {
       savedImages = await saveBase64Image(pictures, `product_${Date.now()}`);
     }
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      res.status(401).json({ message: 'unauthorized personnel' });
-      return;
-    }
+
     const user = await User.create({
       email,
       phoneNumber,
@@ -39,7 +39,7 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
       isActive,
       codes,
       pictures: savedImages,
-      createdBy: admin.firstName,
+      createdBy: admin._id,
     });
 
     if (!user) {
@@ -91,24 +91,25 @@ export const signIn = async (req: Request, res: Response, next: NextFunction): P
   }
 };
 
-export const signOut = async (req: Request, res: Response): Promise<void> => {
-  try {
-    setCookie(res, config.authTokenName, '', { maxAge: 0 });
-    res.status(200).json({ message: 'sign out successfully' });
-    return;
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ message: 'Internal server error' });
-    return;
-  }
-};
+// export const signOut = async (req: Request, res: Response): Promise<void> => {
+//   try {
+//     setCookie(res, config.authTokenName, '', { maxAge: 0 });
+//     res.status(200).json({ message: 'sign out successfully' });
+//     return;
+//   } catch (error) {
+//     console.error('Error:', error);
+//     res.status(500).json({ message: 'Internal server error' });
+//     return;
+//   }
+// };
 
 export const fetchProfile = async (req: Request, res: Response) => {
   const admin = await User.findById(req.admin);
   if (!admin) {
-    res.status(401).json({ message: 'cannot find admin' });
+    res.status(401).json({ message: 'unauthorized personnel' });
     return;
   }
+
   res.status(200).json({ data: admin });
   return;
 };
@@ -142,19 +143,22 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
 
 export const updateUserById = async (req: Request, res: Response): Promise<void> => {
   try {
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      res.status(401).json({ message: 'unauthorized personnel' });
+      return;
+    }
     const { id } = req.params;
     const { pictures, ...data } = req.body;
     const user = await User.findById(id);
-    console.log(req.body);
 
     if (!user) {
-      res.status(404).json({ message: 'Product not found' });
+      res.status(404).json({ message: 'User is not found' });
       return;
     }
 
     const updateData = { ...data };
-    const admin = await User.findById(req.admin);
-    updateData.updatedBy = admin?.firstName; // Explicitly include createdBy
+    updateData.updatedBy = admin._id; // Explicitly include createdBy
 
     if (pictures === null || pictures === '') {
       updateData.pictures = null; // Explicitly clear the pictures field
@@ -164,13 +168,11 @@ export const updateUserById = async (req: Request, res: Response): Promise<void>
     } else {
       updateData.pictures = pictures;
     }
-    // updateData.password = user.password;
 
     const updatedUser = await User.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
     });
-    console.log(updatedUser);
     if (updatedUser) {
       res.status(200).json({ data: updatedUser });
     }

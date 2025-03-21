@@ -20,10 +20,10 @@ export class AppRouter {
   private initializeRoutes(): void {
     this.router.use('/auth', authRoute);
     this.router.use('/order', authentication, orderRoute);
-    this.router.use('/system', systemRoute);
-    this.router.use('/membership', membershipRoute);
-    this.router.use('/product', productRoute);
-    this.router.use('/log', logRoute);
+    this.router.use('/system', authentication, systemRoute);
+    this.router.use('/membership', authentication, membershipRoute);
+    this.router.use('/product', authentication, productRoute);
+    this.router.use('/log', authentication, logRoute);
     this.router.use('/file', new FileRoute().router);
   }
 }

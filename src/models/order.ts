@@ -31,6 +31,7 @@ const orderSchema = new mongoose.Schema(
     amount: { type: Number, required: true },
     paymentMethod: { type: String, required: true },
     createdBy: { type: String, required: true },
+    updatedBy: { type: String },
     totalDiscountValue: { type: Number, required: true },
     totalPoints: { type: Number, required: true },
     totalAmount: { type: Number, required: true },
