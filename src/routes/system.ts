@@ -1,16 +1,16 @@
 import { Router } from 'express';
 const router = Router();
 import {
-  create,
+  createRole,
   createExpense,
   createVoucher,
   updateVoucherByBarcode,
   getAllExpenses,
   getAllVouchers,
   getRoles,
-} from '../controllers/system';
+} from '../controllers/SystemController';
 
-router.post('/create', create);
+router.post('/create', createRole);
 router.get('/retrieve', getRoles);
 router.post('/create-expense', createExpense);
 router.get('/retrieve-expenses', getAllExpenses);

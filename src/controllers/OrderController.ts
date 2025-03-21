@@ -4,9 +4,9 @@ import { Order } from '../models/order';
 import { Response, Request } from 'express';
 import { Product } from '../models/products';
 import ExcelJS from 'exceljs';
-import PDFDocument from 'pdfkit';
 import fs from 'fs';
 import path from 'path';
+import { User } from '../models/auth';
 
 const downloadsDir = path.join(__dirname, '../downloads');
 
@@ -16,8 +16,13 @@ if (!fs.existsSync(downloadsDir)) {
 
 export const createOrder = async (req: Request, res: Response): Promise<void> => {
   const { items, profile, phoneNumber, orderId, ...body } = req.body;
-  console.log(req.body);
   try {
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      res.status(401).json({ message: 'unauthorized personnel' });
+      return;
+    }
+
     if (!items || !Array.isArray(items) || items.length === 0) {
       res.status(400).json({ message: 'No order has been placed.' });
       return;
@@ -55,11 +60,9 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
       orders: items,
       purchasedId: orderId,
       member: memberInfo,
-      createdBy: profile,
+      createdBy: admin._id,
       ...body,
     });
-    console.log(order);
-
     res.status(200).json({ data: order });
   } catch (error) {
     console.error(error);

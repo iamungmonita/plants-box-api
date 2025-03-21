@@ -7,7 +7,7 @@ import {
   updateProductQuantityById,
   updateProductDetailsById,
   getBestSellingProducts,
-} from '../controllers/product';
+} from '../controllers/ProductController';
 import { authentication } from '../middlewares/auth';
 
 router.post('/create', authentication, createProduct);
@@ -15,6 +15,6 @@ router.get('/retrieve', getAllProducts);
 router.get('/best-sellers', getBestSellingProducts);
 router.get('/:id', getProductById);
 router.post('/update/:id', updateProductQuantityById);
-router.put('/update-details/:id', updateProductDetailsById);
+router.put('/update-details/:id', authentication, updateProductDetailsById);
 
 export default router;

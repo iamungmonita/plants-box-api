@@ -28,7 +28,7 @@ export class FileStorage {
   private readonly _folderPath = './data/uploads';
 
   get storageUrl(): string {
-    return process.env.STORAGE_URL ?? 'http://localhost:4003';
+    return process.env.STORAGE_URL ?? 'http://localhost:4002';
   }
 
   constructor(param: FileStorageType) {

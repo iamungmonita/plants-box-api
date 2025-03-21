@@ -8,7 +8,7 @@ import {
   fetchOrdersByRange,
   getOrders,
   getPurchasedOrderByProductId,
-} from '../controllers/order';
+} from '../controllers/OrderController';
 
 router.post('/create', createOrder);
 router.get('/retrieve', getOrders);

@@ -22,10 +22,12 @@ const membership = new mongoose.Schema(
       type: [String],
       required: true,
     },
-
     createdBy: {
       type: String,
       required: true,
+    },
+    updatedBy: {
+      type: String,
     },
     points: {
       type: Number,

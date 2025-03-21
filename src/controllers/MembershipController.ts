@@ -1,25 +1,28 @@
 import { Response, Request } from 'express';
-
 import { Membership } from '../models/membership';
+import { User } from '../models/auth';
+
 export const createMembership = async (req: Request, res: Response): Promise<void> => {
-  const { createdBy, type, phoneNumber, invoices, isActive, points } = req.body;
+  const { type, phoneNumber, invoices, isActive, points } = req.body;
 
   try {
-    if (!createdBy) {
-      res.status(401).json({ message: 'Unauthorized personnel.' });
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      res.status(401).json({ message: 'unauthorized personnel' });
       return;
     }
     if (!type || !phoneNumber || !isActive || !invoices || !points) {
       res.status(400).json({ message: 'All fields are required' });
       return;
     }
+
     const membership = await Membership.create({
       phoneNumber,
       type,
       isActive,
       invoices,
       points,
-      createdBy,
+      createdBy: admin._id,
     });
 
     if (!membership) {
@@ -83,11 +86,20 @@ export const getMembershipById = async (req: Request, res: Response): Promise<vo
   }
 };
 
-export const updateMembershipPointsById = async (req: Request, res: Response): Promise<void> => {
+export const updateMembershipPointsByPhoneNumber = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
-    const { phone } = req.params;
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      res.status(401).json({ message: 'unauthorized personnel' });
+      return;
+    }
 
-    if (!phone) {
+    const { phoneNumber } = req.params;
+
+    if (!phoneNumber) {
       res.status(400).json({ message: 'Phone Number is required' });
       return;
     }
@@ -95,7 +107,7 @@ export const updateMembershipPointsById = async (req: Request, res: Response): P
     const roundedPoints = parseFloat(pointsToSet).toFixed(2);
     const newInvoices = Array.isArray(req.body.invoice) ? req.body.invoice : [req.body.invoice]; // Convert string to array
     const newPoints = await Membership.findOneAndUpdate(
-      { phoneNumber: phone },
+      { phoneNumber: phoneNumber },
       {
         $set: {
           points: roundedPoints, // ✅ Set new points value
@@ -110,7 +122,12 @@ export const updateMembershipPointsById = async (req: Request, res: Response): P
       return;
     }
 
-    res.status(200).json({ success: true, data: newPoints });
+    const data = {
+      newPoints,
+      updatedBy: admin._id,
+    };
+
+    res.status(200).json({ data: data });
   } catch (error) {
     console.error('Error updating product stock:', error);
     res.status(500).json({ message: 'Server error', error });

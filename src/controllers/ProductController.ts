@@ -6,6 +6,12 @@ import { User } from '../models/auth';
 
 export const createProduct = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      res.status(401).json({ message: 'unauthorized personnel' });
+      return;
+    }
+
     const {
       barcode,
       isActive,
@@ -32,14 +38,6 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
       return;
     }
 
-    // Save images and return file paths
-    const admin = await User.findById(req.admin);
-
-    if (!admin) {
-      res.status(401).json({ message: 'unauthorized personnel.' });
-      return;
-    }
-
     const productInfo = {
       name,
       price,
@@ -50,7 +48,7 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
       barcode,
       isActive,
       isDiscountable,
-      updatedBy: admin.firstName,
+      updatedBy: admin._id,
       createdBy: admin._id,
     };
 
@@ -60,7 +58,6 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
       res.status(400).json({ message: 'cannot create product' });
     }
     res.status(200).json({
-      success: true,
       data: product,
     });
   } catch (error) {
@@ -83,7 +80,7 @@ export const getAllProducts = async (req: Request, res: Response, next: NextFunc
     if (category) {
       Object.assign(filter, { category }); // Exact match since it's an autocomplete value
     }
-    const products = await Product.find(filter).populate('createdBy');
+    const products = await Product.find(filter).populate('createdBy').populate('updatedBy');
 
     res.status(200).json({ success: true, data: products });
   } catch (error) {
@@ -119,6 +116,12 @@ export const updateProductQuantityById = async (
   next: NextFunction,
 ) => {
   try {
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      res.status(401).json({ message: 'unauthorized personnel' });
+      return;
+    }
+
     const { id } = req.params;
     const { qty } = req.body;
     if (typeof qty !== 'number' || qty < 0) {
@@ -143,7 +146,12 @@ export const updateProductQuantityById = async (
       { new: true, runValidators: true },
     );
 
-    res.status(200).json({ success: true, data: updatedProduct });
+    const data = {
+      updatedProduct,
+      updatedBy: admin._id,
+    };
+
+    res.status(200).json({ data: data });
   } catch (error) {
     next(error);
   }
@@ -151,24 +159,23 @@ export const updateProductQuantityById = async (
 
 export const updateProductDetailsById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
-    const { pictures, stock, createdBy, ...data } = req.body;
-    const product = await Product.findById(id);
-
-    if (!createdBy) {
-      res.status(200).json({ message: 'Unauthorized personnel.' });
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      res.status(401).json({ message: 'unauthorized personnel' });
       return;
     }
+    const { id } = req.params;
+    const { pictures, stock, ...data } = req.body;
+    const product = await Product.findById(id);
+
     if (!product) {
       res.status(404).json({ message: 'Product not found' });
       return;
     }
 
     // Prepare updates
-    const updateData = { ...data };
-    if (createdBy) {
-      updateData.updatedBy = createdBy; // Explicitly include createdBy
-    }
+    const updateData = { ...data, updatedBy: admin._id };
+
     if (stock !== undefined) {
       const updateNumber = (product?.updatedCount.length || 0) + 1;
       const oldStock = product.stock || 0;
@@ -191,9 +198,9 @@ export const updateProductDetailsById = async (req: Request, res: Response, next
       new: true,
       runValidators: true,
     });
-
     if (updatedProduct) {
-      res.status(200).json({ success: true, data: updatedProduct });
+      res.status(200).json({ data: updatedProduct });
+      return;
     }
   } catch (error) {
     next(error);

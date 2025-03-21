@@ -1,14 +1,17 @@
 import { Response, Request } from 'express';
 import { Expense, Role, Voucher } from '../models/system';
+import { User } from '../models/auth';
 
-export const create = async (req: Request, res: Response): Promise<void> => {
+export const createRole = async (req: Request, res: Response): Promise<void> => {
   const { name, remarks, codes, isActive, createdBy } = req.body;
 
   try {
-    if (!createdBy) {
-      res.status(401).json({ message: 'Unauthorized personnel.' });
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      res.status(401).json({ message: 'unauthorized personnel' });
       return;
     }
+
     if (!name || !codes || !isActive) {
       res.status(400).json({ message: 'All fields are required' });
       return;
@@ -18,7 +21,7 @@ export const create = async (req: Request, res: Response): Promise<void> => {
       codes,
       remarks,
       isActive,
-      createdBy,
+      createdBy: admin._id,
     });
 
     res.status(200).json({ data: role });
@@ -49,11 +52,12 @@ export const getRoles = async (req: Request, res: Response): Promise<void> => {
 };
 
 export const createExpense = async (req: Request, res: Response): Promise<void> => {
-  const { category, amount, remarks, supplier, createdBy, ...data } = req.body;
+  const { category, amount, remarks, supplier, ...data } = req.body;
 
   try {
-    if (!createdBy) {
-      res.status(401).json({ message: 'Unauthorized personnel.' });
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      res.status(401).json({ message: 'unauthorized personnel' });
       return;
     }
     if (!amount || !supplier || !category) {
@@ -65,7 +69,7 @@ export const createExpense = async (req: Request, res: Response): Promise<void> 
       supplier,
       remarks,
       category,
-      createdBy,
+      createdBy: admin._id,
       ...data,
     });
 
@@ -93,14 +97,14 @@ export const getAllExpenses = async (req: Request, res: Response): Promise<void>
 };
 
 export const createVoucher = async (req: Request, res: Response): Promise<void> => {
-  const { createdBy, validFrom, validTo, ...data } = req.body;
+  const { validFrom, validTo, ...data } = req.body;
 
   try {
-    if (!createdBy) {
-      res.status(401).json({ message: 'Unauthorized personnel.' });
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      res.status(401).json({ message: 'unauthorized personnel' });
       return;
     }
-
     if (!data.barcode || !data.discount || !validFrom || !validTo) {
       res.status(400).json({ message: 'These fields are required' });
       return;
@@ -115,7 +119,7 @@ export const createVoucher = async (req: Request, res: Response): Promise<void> 
     const isActive = now >= fromDate && now <= toDate;
 
     const voucher = await Voucher.create({
-      createdBy,
+      createdBy: admin._id,
       validFrom,
       validTo,
       isActive,
@@ -152,6 +156,11 @@ export const getAllVouchers = async (req: Request, res: Response): Promise<void>
 export const updateVoucherByBarcode = async (req: Request, res: Response): Promise<void> => {
   const { barcode } = req.params;
   try {
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      res.status(401).json({ message: 'unauthorized personnel' });
+      return;
+    }
     if (!barcode) {
       res.status(400).json({ message: 'Barcode is required' });
       return;
@@ -165,8 +174,12 @@ export const updateVoucherByBarcode = async (req: Request, res: Response): Promi
       res.status(404).json({ message: 'Voucher not found' });
       return;
     }
+    const data = {
+      updatedVoucher,
+      updatedBy: admin._id,
+    };
 
-    res.json({ data: updatedVoucher });
+    res.json({ data: data });
   } catch (error) {
     res.status(500).json({ message: 'An unexpected error occurred' });
   }

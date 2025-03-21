@@ -1,15 +1,17 @@
 import { Response, Request } from 'express';
 import { CountLog, Log } from '../models/log';
+import { User } from '../models/auth';
 
 export const createLog = async (req: Request, res: Response): Promise<void> => {
-  const { createdBy, riels, dollars } = req.body;
+  const { riels, dollars } = req.body;
+  const admin = await User.findById(req.admin);
+  if (!admin) {
+    res.status(401).json({ message: 'unauthorized personnel' });
+    return;
+  }
   try {
-    if (!createdBy) {
-      res.status(401).json({ message: 'Unauthorized personnel.' });
-      return;
-    }
     const log = await Log.create({
-      createdBy,
+      createdBy: admin?._id,
       riels,
       dollars,
     });
