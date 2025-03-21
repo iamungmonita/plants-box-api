@@ -1,5 +1,6 @@
-import { config } from '../config/config';
 import jwt from 'jsonwebtoken';
+
+import { config } from '../config/config';
 
 export class Token {
   id: string;
