@@ -19,7 +19,7 @@ export class FileController {
       const { folderName = '', fileName = '' } = request.body;
       const fileStorage = new FileStorage({ fileName, folderName, request });
       const file = await fileStorage.write();
-
+      console.log(file);
       response.json(file);
     } catch (error) {
       next(error);

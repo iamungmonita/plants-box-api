@@ -95,6 +95,9 @@ const voucherSchema = new mongoose.Schema(
       type: Boolean,
       default: true, // Voucher is active by default
     },
+    updatedBy: {
+      type: String,
+    },
     createdBy: {
       type: String,
       required: true,

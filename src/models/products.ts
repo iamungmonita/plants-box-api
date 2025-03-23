@@ -27,7 +27,6 @@ const product = new mongoose.Schema(
     updatedBy: {
       type: Schema.Types.ObjectId,
       ref: 'users', // Reference to the User collection
-      required: true,
     },
     createdBy: {
       type: Schema.Types.ObjectId,
