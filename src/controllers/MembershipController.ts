@@ -1,4 +1,4 @@
-import { Response, Request } from 'express';
+import { Response, Request, NextFunction } from 'express';
 import { Membership } from '../models/membership';
 import { User } from '../models/auth';
 
@@ -23,13 +23,14 @@ export const createMembership = async (req: Request, res: Response): Promise<voi
       invoices,
       points,
       createdBy: admin._id,
+      updatedBy: admin._id,
     });
 
     if (!membership) {
       res.status(400).json({ message: 'cannot created membership' });
       return;
     }
-    res.status(200).json({ message: 'Created successfully', data: membership });
+    res.status(200).json({ data: membership });
   } catch (error) {
     if (error instanceof Error && 'code' in error && (error as any).code === 11000) {
       res.status(400).json({
@@ -48,6 +49,11 @@ export const getAllMembership = async (req: Request, res: Response): Promise<voi
   const { search, type } = req.query;
   try {
     const filter: any = {};
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      res.status(401).json({ message: 'unauthorized personnel' });
+      return;
+    }
     if (search) {
       filter.$or = [
         { phoneNumber: { $regex: search, $options: 'i' } }, // Case-insensitive partial match for name
@@ -57,7 +63,7 @@ export const getAllMembership = async (req: Request, res: Response): Promise<voi
       Object.assign(filter, { type }); // Exact match since it's an autocomplete value
     }
 
-    const membership = await Membership.find(filter);
+    const membership = await Membership.find(filter).populate('createdBy');
     const count = membership.length;
     const profile = {
       member: membership,
@@ -69,9 +75,14 @@ export const getAllMembership = async (req: Request, res: Response): Promise<voi
   }
 };
 export const getMembershipById = async (req: Request, res: Response): Promise<void> => {
-  const { id } = req.body;
+  const { id } = req.params;
 
   try {
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      res.status(401).json({ message: 'unauthorized personnel' });
+      return;
+    }
     if (!id) {
       res.status(400).json({ message: 'ID is required.' });
       return;
@@ -131,5 +142,37 @@ export const updateMembershipPointsByPhoneNumber = async (
   } catch (error) {
     console.error('Error updating product stock:', error);
     res.status(500).json({ message: 'Server error', error });
+  }
+};
+export const updateMembershipById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      res.status(401).json({ message: 'unauthorized personnel' });
+      return;
+    }
+    const { id } = req.params;
+    const { phoneNumber, isActive, ...data } = req.body;
+    const product = await Membership.findById(id);
+
+    if (!product) {
+      res.status(404).json({ message: 'Product not found' });
+      return;
+    }
+
+    const updatedInfo = await Membership.findByIdAndUpdate(
+      id,
+      { $set: { phoneNumber: phoneNumber, isActive: isActive } },
+      {
+        new: true,
+        runValidators: true,
+      },
+    );
+    if (updatedInfo) {
+      res.status(200).json({ data: updatedInfo });
+      return;
+    }
+  } catch (error) {
+    next(error);
   }
 };

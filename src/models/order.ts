@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
 const orderItemSchema = new mongoose.Schema(
   {
@@ -23,6 +23,17 @@ const memberSchema = new mongoose.Schema(
   { _id: false },
 );
 
+export const OrderStatus = {
+  COMPLETE: 1,
+  PENDING: 2,
+  CANCELLED: 3,
+};
+export const PaymentStatus = {
+  COMPLETE: 1,
+  PENDING: 2,
+  CANCELLED: 3,
+};
+
 const orderSchema = new mongoose.Schema(
   {
     purchasedId: { type: String, required: true },
@@ -30,8 +41,16 @@ const orderSchema = new mongoose.Schema(
     totalDiscountPercentage: { type: Number, default: 0 },
     amount: { type: Number, required: true },
     paymentMethod: { type: String, required: true },
-    createdBy: { type: String, required: true },
-    updatedBy: { type: String },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'users', // Reference to the User collection
+      required: true,
+    },
+    updatedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'users', // Reference to the User collection
+      required: true,
+    },
     totalDiscountValue: { type: Number, required: true },
     totalPoints: { type: Number, required: true },
     totalAmount: { type: Number, required: true },
@@ -39,6 +58,18 @@ const orderSchema = new mongoose.Schema(
     paidAmount: { type: Number, default: 0 },
     changeAmount: { type: Number, default: 0 },
     others: { type: String },
+    orderStatus: {
+      type: Number,
+      required: true,
+      enum: Object.values(OrderStatus),
+      default: OrderStatus.PENDING,
+    },
+    paymentStatus: {
+      type: Number,
+      required: true,
+      enum: Object.values(PaymentStatus),
+      default: PaymentStatus.PENDING,
+    },
   },
   { timestamps: true },
 );

@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
 const membership = new mongoose.Schema(
   {
@@ -23,11 +23,14 @@ const membership = new mongoose.Schema(
       required: true,
     },
     createdBy: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: 'users', // Reference to the User collection
       required: true,
     },
     updatedBy: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: 'users', // Reference to the User collection
+      required: true,
     },
     points: {
       type: Number,

@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
 const user = new mongoose.Schema(
   {
@@ -45,8 +45,16 @@ const user = new mongoose.Schema(
       default: true,
     },
     pictures: { type: String }, // Array of image URLs/paths
-    createdBy: { type: String, required: true },
-    updatedBy: { type: String },
+    updatedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'users', // Reference to the User collection
+      required: true,
+    },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'users', // Reference to the User collection
+      required: true,
+    },
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields

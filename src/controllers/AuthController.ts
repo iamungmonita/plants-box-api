@@ -116,7 +116,7 @@ export const fetchProfile = async (req: Request, res: Response) => {
 
 export const getUsers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const users = await User.find();
+    const users = await User.find().populate('createdBy');
     res.status(200).json({ data: users });
   } catch (error) {
     res.status(500).json({ message: 'An unexpected error occurred' });
