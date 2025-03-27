@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
 const roleSchema = new mongoose.Schema(
   {
@@ -13,10 +13,11 @@ const roleSchema = new mongoose.Schema(
       required: true,
     },
     createdBy: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: 'users', // Reference to the User collection
       required: true,
     },
-    remarks: {
+    remark: {
       type: String,
     },
     isActive: {
@@ -28,9 +29,6 @@ const roleSchema = new mongoose.Schema(
     timestamps: true, // Adds createdAt and updatedAt fields
   },
 );
-
-const Role = mongoose.model('Role', roleSchema); // Singular, as Mongoose auto-pluralizes it
-
 const expenseSchema = new mongoose.Schema(
   {
     category: {
@@ -53,7 +51,8 @@ const expenseSchema = new mongoose.Schema(
       trim: true,
     },
     createdBy: {
-      type: String, // Store supplier or vendor name if applicable
+      type: Schema.Types.ObjectId,
+      ref: 'users', // Reference to the User collection
       required: true,
     },
     supplier: {
@@ -67,8 +66,6 @@ const expenseSchema = new mongoose.Schema(
   },
   { timestamps: true }, // Automatically adds createdAt and updatedAt
 );
-
-const Expense = mongoose.model('Expense', expenseSchema);
 
 const voucherSchema = new mongoose.Schema(
   {
@@ -99,14 +96,16 @@ const voucherSchema = new mongoose.Schema(
       type: String,
     },
     createdBy: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: 'users', // Reference to the User collection
       required: true,
     },
   },
   { timestamps: true }, // Automatically adds createdAt and updatedAt
 );
 
+const Role = mongoose.model('Role', roleSchema); // Singular, as Mongoose auto-pluralizes it
+const Expense = mongoose.model('Expense', expenseSchema);
 const Voucher = mongoose.model('Voucher', voucherSchema);
 
-// Export using ES6
 export { Expense, Role, Voucher };

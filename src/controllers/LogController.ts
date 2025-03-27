@@ -3,7 +3,7 @@ import { CountLog, Log } from '../models/log';
 import { User } from '../models/auth';
 
 export const createLog = async (req: Request, res: Response): Promise<void> => {
-  const { riels, dollars } = req.body;
+  const { riels, dollars, rielTotal, dollarTotal } = req.body;
   const admin = await User.findById(req.admin);
   if (!admin) {
     res.status(401).json({ message: 'unauthorized personnel' });
@@ -14,6 +14,8 @@ export const createLog = async (req: Request, res: Response): Promise<void> => {
       createdBy: admin?._id,
       riels,
       dollars,
+      rielTotal,
+      dollarTotal,
     });
     if (!log) {
       res.status(400).json({ message: 'cannot create log' });
@@ -28,7 +30,12 @@ export const createLog = async (req: Request, res: Response): Promise<void> => {
 
 export const getLogs = async (req: Request, res: Response): Promise<void> => {
   try {
-    const log = await Log.find();
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      res.status(401).json({ message: 'unauthorized personnel' });
+      return;
+    }
+    const log = await Log.find().populate('createdBy');
     res.status(200).json({ data: log });
   } catch (error) {
     console.error(error);

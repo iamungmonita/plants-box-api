@@ -1,10 +1,16 @@
-import mongoose from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
 const log = new mongoose.Schema(
   {
-    createdBy: { type: String, required: true }, // Counter identifier (e.g., user or transaction)
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'users', // Reference to the User collection
+      required: true,
+    },
     riels: { type: mongoose.Schema.Types.Mixed, required: true }, // Riels (mixed structure)
     dollars: { type: mongoose.Schema.Types.Mixed, required: true }, // Dollars (mixed structure)
+    rielTotal: { type: Number, required: true }, // Dollars (mixed structure)
+    dollarTotal: { type: Number, required: true }, // Dollars (mixed structure)
   },
   {
     timestamps: true, // Automatically adds createdAt and updatedAt fields
