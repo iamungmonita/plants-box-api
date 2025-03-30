@@ -82,7 +82,7 @@ export const getAllProducts = async (req: Request, res: Response, next: NextFunc
     }
     const products = await Product.find(filter).populate('createdBy').populate('updatedBy');
 
-    res.status(200).json({ success: true, data: products });
+    res.status(200).json({ data: products });
   } catch (error) {
     next(error);
   }
@@ -156,6 +156,52 @@ export const updateProductQuantityById = async (
     next(error);
   }
 };
+export const updateCancelledProductQuantityById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      res.status(401).json({ message: 'unauthorized personnel' });
+      return;
+    }
+
+    const { id } = req.params;
+    const { qty } = req.body;
+    if (typeof qty !== 'number' || qty < 0) {
+      res.status(400).json({ message: 'Invalid stock value' });
+      return;
+    }
+
+    const product = await Product.findById(id);
+    if (!product) {
+      res.status(400).json({ message: 'Cannot find product' });
+      return;
+    }
+
+    // if (product.stock < qty) {
+    //   res.status(400).json({ message: 'product stock is lower than demand.' });
+    //   return;
+    // } // Return null if stock is less than qty
+
+    const updatedProduct = await Product.findByIdAndUpdate(
+      id,
+      { $inc: { stock: qty, soldQty: -qty } },
+      { new: true, runValidators: true },
+    );
+
+    const data = {
+      updatedProduct,
+      updatedBy: admin._id,
+    };
+
+    res.status(200).json({ data: data });
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const updateProductDetailsById = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -175,14 +221,20 @@ export const updateProductDetailsById = async (req: Request, res: Response, next
 
     // Prepare updates
     const updateData = { ...data, updatedBy: admin._id };
-
     if (stock !== undefined) {
       const updateNumber = (product?.updatedCount.length || 0) + 1;
       const oldStock = product.stock || 0;
-      const addedStock = stock - oldStock;
-      const newUpdate = { updateNumber, oldStock, addedStock };
-      updateData.stock = stock;
-      updateData.$push = { updatedCount: newUpdate };
+
+      if (stock > oldStock) {
+        // Only update when stock increases
+        const addedStock = stock - oldStock;
+        const newUpdate = { updateNumber, oldStock, addedStock };
+
+        updateData.stock = stock;
+        updateData.$push = { updatedCount: newUpdate };
+      } else {
+        updateData.stock = stock; // Still update stock, but don't push to updatedCount
+      }
     }
 
     if (pictures === null || pictures === '') {

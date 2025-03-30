@@ -5,21 +5,30 @@ import { saveBase64Image } from '../helpers/file';
 import { User } from '../models/auth';
 import { initialCount } from './LogController';
 import { Token } from '../helpers/token';
-import { BadRequestError, MissingParamError } from '../libs';
+import { BadRequestError, DuplicatedParamError, MissingParamError } from '../libs';
+import { Role } from '../models/system';
 
-export const signUp = async (req: Request, res: Response): Promise<void> => {
+export const signUp = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const { firstName, lastName, role, codes, email, password, phoneNumber, isActive, pictures } =
     req.body;
   try {
     const admin = await User.findById(req.admin);
     if (!admin) {
-      res.status(401).json({ message: 'unauthorized personnel' });
+      return;
+    }
+    const position = await Role.findById(role);
+    if (!position) {
       return;
     }
 
     if (!firstName || !lastName || !role || !email || !password || !phoneNumber || !codes) {
-      res.status(400).json({ message: 'All fields are required' });
-      return;
+      throw new BadRequestError('All fields are required');
+    }
+
+    const existingUser = await User.findOne({ email, isActive: true });
+
+    if (existingUser) {
+      throw new DuplicatedParamError('email', 11000);
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -34,31 +43,22 @@ export const signUp = async (req: Request, res: Response): Promise<void> => {
       phoneNumber,
       firstName,
       lastName,
-      role,
+      role: position._id,
       password: hashedPassword,
       isActive,
       codes,
       pictures: savedImages,
       createdBy: admin._id,
+      updatedBy: admin._id,
     });
 
     if (!user) {
-      res.status(400).json({ message: 'Error creating user.' });
-      return;
+      throw new BadRequestError('Error creating user.');
     }
 
     res.status(200).json({ data: user });
   } catch (error) {
-    if (error instanceof Error && 'code' in error && (error as any).code === 11000) {
-      res.status(400).json({
-        name: 'email',
-        message: `This email already registered`,
-      });
-      return;
-    } else {
-      res.status(500).json({ message: 'Internal server error' });
-      return;
-    }
+    next(error);
   }
 };
 
@@ -116,7 +116,7 @@ export const fetchProfile = async (req: Request, res: Response) => {
 
 export const getUsers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const users = await User.find();
+    const users = await User.find().populate('createdBy').populate('role');
     res.status(200).json({ data: users });
   } catch (error) {
     res.status(500).json({ message: 'An unexpected error occurred' });

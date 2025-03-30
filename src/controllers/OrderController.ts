@@ -1,12 +1,14 @@
 import { convertedDateEnd, convertedDateStart } from '../helpers';
 import { Membership } from '../models/membership';
-import { Order } from '../models/order';
-import { Response, Request } from 'express';
+import { Order, OrderStatus, PaymentStatus } from '../models/order';
+import { Response, Request, NextFunction } from 'express';
 import { Product } from '../models/products';
 import ExcelJS from 'exceljs';
 import fs from 'fs';
 import path from 'path';
 import { User } from '../models/auth';
+import { updateCancelledProductQuantityById } from './ProductController';
+import moment from 'moment';
 
 const downloadsDir = path.join(__dirname, '../downloads');
 
@@ -59,10 +61,14 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
     const order = await Order.create({
       orders: items,
       purchasedId: orderId,
+      orderStatus: OrderStatus.COMPLETE,
+      paymentStatus: PaymentStatus.COMPLETE,
       member: memberInfo,
       createdBy: admin._id,
+      updatedBy: admin._id,
       ...body,
     });
+
     res.status(200).json({ data: order });
   } catch (error) {
     console.error(error);
@@ -99,7 +105,11 @@ export const getOrders = async (req: Request, res: Response): Promise<void> => {
   }
 
   try {
-    const orders = await Order.find(filter);
+    const orders = await Order.find(filter).populate('createdBy');
+    if (!orders) {
+      res.status(400).json({ message: 'cannot fetch orders' });
+      return;
+    }
     const amount = orders.reduce((acc, order) => acc + order.totalAmount, 0);
     const data = {
       orders: orders,
@@ -167,13 +177,12 @@ export const getPurchasedOrderByProductId = async (req: Request, res: Response):
       query['purchasedId'] = { $regex: purchasedId, $options: 'i' };
     }
 
-    const order = await Order.find(query);
+    const order = await Order.find(query).populate('createdBy');
     if (order.length === 0) {
       res.status(400).json({ message: 'Order with this Purchased ID does not exist.' });
       return;
     }
     res.status(200).json({
-      success: true,
       message: 'An order matched this ID.',
       data: order,
     });
@@ -240,8 +249,8 @@ export const downloadOrdersExcel = async (req: Request, res: Response) => {
     const filter: any = {};
 
     if (start || end) {
-      const parsedDateStart = new Date(start as string);
-      const parsedDateEnd = new Date(end as string);
+      const parsedDateStart = start ? new Date(start as string) : new Date(0); // Defaults to 1970-01-01
+      const parsedDateEnd = end ? new Date(end as string) : new Date();
       if (isNaN(parsedDateStart.getTime()) && isNaN(parsedDateEnd.getTime())) {
         res.status(400).json({ message: 'Invalid date format' });
         return;
@@ -302,5 +311,104 @@ export const downloadOrdersExcel = async (req: Request, res: Response) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to generate Excel file' });
+  }
+};
+
+export const cancelOrderById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      res.status(401).json({ message: 'Unauthorized personnel' });
+      return;
+    }
+
+    const { id } = req.params;
+
+    const order = await Order.findById(id);
+    if (!order) {
+      res.status(400).json({ message: 'Cannot find order' });
+      return;
+    }
+
+    await Order.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          totalAmount: 0,
+          orderStatus: OrderStatus.CANCELLED,
+          paymentStatus: PaymentStatus.CANCELLED,
+          updatedBy: admin._id,
+        },
+      },
+      { new: true, runValidators: true },
+    );
+    res.status(200).json({ message: 'Order cancelled successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const retrieveOrderById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      res.status(401).json({ message: 'Unauthorized personnel' });
+      return;
+    }
+
+    const { id } = req.params;
+    const { total } = req.body;
+    console.log(id, total);
+    const order = await Order.findById(id);
+    if (!order) {
+      res.status(400).json({ message: 'Cannot find order' });
+      return;
+    }
+
+    await Order.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          totalAmount: total,
+          orderStatus: OrderStatus.COMPLETE,
+          paymentStatus: PaymentStatus.COMPLETE,
+          updatedBy: admin._id,
+        },
+      },
+      { new: true, runValidators: true },
+    );
+
+    res.status(200).json({ message: 'Order retrieved successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getMonthlySale = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const sales = await Order.aggregate([
+      {
+        $addFields: {
+          localMonth: { $dateToString: { format: '%Y-%m', date: '$updatedAt' } }, // Extract month and year from Date object
+        },
+      },
+      {
+        $group: {
+          _id: '$localMonth',
+          totalSale: { $sum: '$totalAmount' },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    const formattedSales = sales.map((sale) => ({
+      month: moment(sale._id, 'YYYY-MM').format('MMM'), // Format as "Jan", "Feb", "Mar" (without year)
+      sale: sale.totalSale,
+    }));
+
+    res.status(200).json({ data: formattedSales });
+  } catch (error: any) {
+    console.error('Error fetching monthly sales:', error);
+    res.status(500).json({ message: 'An unexpected error occurred', error: error.message });
   }
 };

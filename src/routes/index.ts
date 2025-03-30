@@ -7,6 +7,7 @@ import membershipRoute from './membership';
 import orderRoute from './order';
 import productRoute from './product';
 import systemRoute from './system';
+import downloadRoute from './download';
 import { authentication } from '../middlewares/auth';
 
 export class AppRouter {
@@ -20,6 +21,7 @@ export class AppRouter {
   private initializeRoutes(): void {
     this.router.use('/auth', authRoute);
     this.router.use('/order', authentication, orderRoute);
+    this.router.use('/download', downloadRoute);
     this.router.use('/system', authentication, systemRoute);
     this.router.use('/membership', authentication, membershipRoute);
     this.router.use('/product', authentication, productRoute);

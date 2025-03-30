@@ -5,13 +5,14 @@ import {
   createMembership,
   getAllMembership,
   getMembershipById,
+  updateMembershipById,
   updateMembershipPointsByPhoneNumber,
 } from '../controllers/MembershipController';
-import { authentication } from '../middlewares/auth';
 
-router.post('/create', authentication, createMembership);
+router.post('/create', createMembership);
 router.get('/retrieve', getAllMembership);
 router.get('/retrieve/:id', getMembershipById);
 router.put('/update-points/:phoneNumber', updateMembershipPointsByPhoneNumber);
+router.put('/update/:id', updateMembershipById);
 
 export default router;
