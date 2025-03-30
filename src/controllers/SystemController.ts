@@ -198,14 +198,13 @@ export const createVoucher = async (req: Request, res: Response): Promise<void> 
     const fromDate = new Date(validFrom);
     const toDate = new Date(validTo);
 
-    // Determine isActive status
-    const isActive = now >= fromDate && now <= toDate;
+    const isExpired = now >= fromDate && now <= toDate;
 
     const voucher = await Voucher.create({
       createdBy: admin._id,
-      validFrom,
-      validTo,
-      isActive,
+      validFrom: fromDate,
+      validTo: toDate,
+      isExpired: !isExpired,
       ...data,
     });
 

@@ -33,7 +33,8 @@ const user = new mongoose.Schema(
       minlength: 6,
     },
     role: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: 'Role', // Reference to the User collection
       required: true,
     },
     codes: {

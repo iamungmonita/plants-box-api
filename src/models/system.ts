@@ -6,7 +6,6 @@ const roleSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      unique: true,
     },
     codes: {
       type: [String],
@@ -69,6 +68,11 @@ const expenseSchema = new mongoose.Schema(
 
 const voucherSchema = new mongoose.Schema(
   {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     barcode: {
       type: String,
       required: true,
@@ -89,6 +93,10 @@ const voucherSchema = new mongoose.Schema(
       required: true,
     },
     isActive: {
+      type: Boolean,
+      default: true, // Voucher is active by default
+    },
+    isExpired: {
       type: Boolean,
       default: true, // Voucher is active by default
     },
