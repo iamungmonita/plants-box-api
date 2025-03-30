@@ -5,7 +5,7 @@ import { saveBase64Image } from '../helpers/file';
 import { User } from '../models/auth';
 import { initialCount } from './LogController';
 import { Token } from '../helpers/token';
-import { BadRequestError, DuplicatedParamError, MissingParamError } from '../libs';
+import { BadRequestError, DuplicatedParamError, MissingParamError, NotFoundError } from '../libs';
 import { Role } from '../models/system';
 
 export const signUp = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -14,11 +14,12 @@ export const signUp = async (req: Request, res: Response, next: NextFunction): P
   try {
     const admin = await User.findById(req.admin);
     if (!admin) {
-      return;
+      throw new NotFoundError('Admin does not existed');
     }
+
     const position = await Role.findById(role);
     if (!position) {
-      return;
+      throw new NotFoundError('Role does not existed');
     }
 
     if (!firstName || !lastName || !role || !email || !password || !phoneNumber || !codes) {

@@ -35,7 +35,8 @@ const user = new mongoose.Schema(
     role: {
       type: Schema.Types.ObjectId,
       ref: 'Role', // Reference to the User collection
-      required: true,
+      required: false,
+      default: null,
     },
     codes: {
       type: [String],
@@ -49,12 +50,14 @@ const user = new mongoose.Schema(
     updatedBy: {
       type: Schema.Types.ObjectId,
       ref: 'users', // Reference to the User collection
-      required: true,
+      required: false,
+      default: null,
     },
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: 'users', // Reference to the User collection
-      required: true,
+      required: false,
+      default: null,
     },
   },
   {
