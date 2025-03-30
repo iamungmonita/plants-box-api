@@ -24,14 +24,15 @@ class Server {
 
   #config() {
     dotenv.config();
-
-    const corsOption = {
-      origin: process.env.ALLOW_CORS?.split(',') ?? ['http://127.0.0.1:3000'],
-      methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow specific HTTP methods
-      allowedHeaders: ['Content-Type', 'Authorization'],
-      credentials: true,
-    };
-    this.#app.use(cors(corsOption));
+    if (process.env.NODE_ENV === 'production') {
+      const corsOption = {
+        origin: process.env.ALLOW_CORS?.split(',') ?? ['http://127.0.0.1:3000'],
+        methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow specific HTTP methods
+        allowedHeaders: ['Content-Type', 'Authorization'],
+        credentials: true,
+      };
+      this.#app.use(cors(corsOption));
+    }
 
     // set port server
     this.#app.set('port', process.env.PORT ?? 3000);
@@ -52,8 +53,8 @@ class Server {
 
   #initRoutes() {
     const { router } = new AppRouter();
-    this.#app.use('/', router);
-    this.#app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+    this.#app.use('/api', router);
+    this.#app.use('/api/uploads', express.static(path.join(__dirname, '../uploads')));
     this.#handlerError();
   }
 
