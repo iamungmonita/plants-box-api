@@ -2,6 +2,12 @@ import mongoose, { Schema } from 'mongoose';
 
 const user = new mongoose.Schema(
   {
+    fullName: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 3,
+    },
     firstName: {
       type: String,
       required: true,

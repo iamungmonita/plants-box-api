@@ -14,23 +14,18 @@ export const signUp = async (req: Request, res: Response, next: NextFunction): P
   try {
     const admin = await User.findById(req.admin);
     if (!admin) {
-      throw new NotFoundError('Admin does not existed');
+      throw new NotFoundError('Admin does not exist.');
     }
 
     const position = await Role.findById(role);
     if (!position) {
-      throw new NotFoundError('Role does not existed');
+      throw new NotFoundError('Role does not exist.');
     }
 
     if (!firstName || !lastName || !role || !email || !password || !phoneNumber || !codes) {
       throw new BadRequestError('All fields are required');
     }
-
-    const existingUser = await User.findOne({ email, isActive: true });
-
-    if (existingUser) {
-      throw new DuplicatedParamError('email', 11000);
-    }
+    const fullName = `${firstName} ${lastName}`.trim(); // Combine first and last name
 
     const hashedPassword = await bcrypt.hash(password, 10);
     let savedImages = '';
@@ -44,6 +39,7 @@ export const signUp = async (req: Request, res: Response, next: NextFunction): P
       phoneNumber,
       firstName,
       lastName,
+      fullName,
       role: position._id,
       password: hashedPassword,
       isActive,
@@ -57,15 +53,21 @@ export const signUp = async (req: Request, res: Response, next: NextFunction): P
       throw new BadRequestError('Error creating user.');
     }
 
-    res.status(200).json({ data: user });
+    res.json({ data: user });
   } catch (error) {
-    next(error);
+    const err = error as { code?: number };
+    if (err.code === 11000) {
+      next(new DuplicatedParamError('email', 11000));
+    } else {
+      next(error);
+    }
   }
 };
 
 export const signIn = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  const { email, password } = req.body;
+
   try {
-    const { email, password } = req.body;
     if (!email) {
       throw new MissingParamError('email');
     }
@@ -92,74 +94,72 @@ export const signIn = async (req: Request, res: Response, next: NextFunction): P
   }
 };
 
-// export const signOut = async (req: Request, res: Response): Promise<void> => {
-//   try {
-//     setCookie(res, config.authTokenName, '', { maxAge: 0 });
-//     res.status(200).json({ message: 'sign out successfully' });
-//     return;
-//   } catch (error) {
-//     console.error('Error:', error);
-//     res.status(500).json({ message: 'Internal server error' });
-//     return;
-//   }
-// };
-
-export const fetchProfile = async (req: Request, res: Response) => {
-  const admin = await User.findById(req.admin);
-  if (!admin) {
-    res.status(401).json({ message: 'unauthorized personnel' });
-    return;
-  }
-
-  res.status(200).json({ data: admin });
-  return;
-};
-
-export const getUsers = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const users = await User.find().populate('createdBy').populate('role');
-    res.status(200).json({ data: users });
-  } catch (error) {
-    res.status(500).json({ message: 'An unexpected error occurred' });
-  }
-};
-
-export const getUserById = async (req: Request, res: Response): Promise<void> => {
-  const { id } = req.params;
-  try {
-    if (!id) {
-      res.status(400).json({ message: 'ID is required.' });
-      return;
-    }
-    const user = await User.findById(id);
-    if (!user) {
-      res.status(400).json({ message: 'User does not exist.' });
-      return;
-    }
-    res.status(200).json({ data: user });
-  } catch (error) {
-    res.status(500).json({ message: 'An unexpected error occurred' });
-  }
-};
-
-export const updateUserById = async (req: Request, res: Response): Promise<void> => {
+export const getAdmin = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const admin = await User.findById(req.admin);
     if (!admin) {
-      res.status(401).json({ message: 'unauthorized personnel' });
-      return;
+      throw new NotFoundError('Admin does not existed');
     }
-    const { id } = req.params;
-    const { pictures, ...data } = req.body;
+    res.json({ data: admin });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const users = await User.find().populate('createdBy').populate('role').populate('updatedBy');
+    res.json({ data: users });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getUserById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  const { id } = req.params;
+  try {
+    const user = await User.findById(id);
+    if (!user) {
+      throw new NotFoundError('User does not exist.');
+    }
+
+    res.json({ data: user });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateUserById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  const { id } = req.params;
+  const { pictures, firstName, lastName, ...data } = req.body;
+
+  try {
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      throw new NotFoundError('Admin does not exist.');
+    }
     const user = await User.findById(id);
 
     if (!user) {
-      res.status(404).json({ message: 'User is not found' });
-      return;
+      throw new NotFoundError('User does not exist.');
     }
 
     const updateData = { ...data };
     updateData.updatedBy = admin._id; // Explicitly include createdBy
+
+    if (firstName !== undefined || lastName !== undefined) {
+      updateData.firstName = firstName ?? user.firstName;
+      updateData.lastName = lastName ?? user.lastName;
+      updateData.fullName = `${updateData.firstName} ${updateData.lastName}`.trim();
+    }
 
     if (pictures === null || pictures === '') {
       updateData.pictures = null; // Explicitly clear the pictures field
@@ -174,11 +174,17 @@ export const updateUserById = async (req: Request, res: Response): Promise<void>
       new: true,
       runValidators: true,
     });
-    if (updatedUser) {
-      res.status(200).json({ data: updatedUser });
+
+    if (!updatedUser) {
+      throw new BadRequestError('Error updating user.');
     }
+    res.json({ data: updatedUser });
   } catch (error) {
-    console.error('Error updating product stock:', error);
-    res.status(500).json({ message: 'Server error', error });
+    const err = error as { code?: number };
+    if (err.code === 11000) {
+      next(new DuplicatedParamError('email', 11000));
+    } else {
+      next(error);
+    }
   }
 };
