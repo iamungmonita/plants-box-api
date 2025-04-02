@@ -13,6 +13,8 @@ import {
   getRoleById,
   getVoucherById,
   updateVoucherById,
+  getExpenseById,
+  updateExpenseById,
 } from '../controllers/SystemController';
 
 router.post('/create', createRole);
@@ -21,6 +23,8 @@ router.get('/retrieve-role/:id', getRoleById);
 router.put('/update-role/:id', updateRoleById);
 router.post('/create-expense', createExpense);
 router.get('/retrieve-expenses', getAllExpenses);
+router.get('/retrieve-expenses/:id', getExpenseById);
+router.put('/expense/update/:id', updateExpenseById);
 router.post('/create-voucher', createVoucher);
 router.get('/retrieve-vouchers', getAllVouchers);
 router.get('/voucher/:id', getVoucherById);

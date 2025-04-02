@@ -1,20 +1,30 @@
 import { Response, Request, NextFunction } from 'express';
 import { Membership } from '../models/membership';
 import { User } from '../models/auth';
+import {
+  BadRequestError,
+  DuplicatedParamError,
+  MissingParamError,
+  NotFoundError,
+} from '../libs/exceptions';
 
-export const createMembership = async (req: Request, res: Response): Promise<void> => {
+export const createMembership = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   const { type, phoneNumber, invoices, isActive, points } = req.body;
 
   try {
     const admin = await User.findById(req.admin);
     if (!admin) {
-      res.status(401).json({ message: 'unauthorized personnel' });
-      return;
+      throw new NotFoundError('Admin does not exist.');
     }
-    if (!type || !phoneNumber || !isActive || !invoices || !points) {
-      res.status(400).json({ message: 'All fields are required' });
-      return;
-    }
+    if (!type) throw new MissingParamError('type');
+    if (!phoneNumber) throw new MissingParamError('phoneNumber');
+    if (!isActive) throw new MissingParamError('isActive');
+    if (!invoices) throw new MissingParamError('invoices');
+    if (!points) throw new MissingParamError('points');
 
     const membership = await Membership.create({
       phoneNumber,
@@ -27,32 +37,31 @@ export const createMembership = async (req: Request, res: Response): Promise<voi
     });
 
     if (!membership) {
-      res.status(400).json({ message: 'cannot created membership' });
-      return;
+      throw new BadRequestError('Error creating membership.');
     }
-    res.status(200).json({ data: membership });
+
+    res.json({ data: membership });
   } catch (error) {
-    if (error instanceof Error && 'code' in error && (error as any).code === 11000) {
-      res.status(400).json({
-        name: 'phoneNumber',
-        message: `This phone number is already registered`,
-      });
-      return;
+    const err = error as { code?: number };
+    if (err.code === 11000) {
+      next(new DuplicatedParamError('phoneNumber', 11000));
     } else {
-      res.status(500).json({ message: 'Internal server error' });
-      return;
+      next(error);
     }
   }
 };
 
-export const getAllMembership = async (req: Request, res: Response): Promise<void> => {
+export const getAllMembership = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   const { search, type } = req.query;
   try {
     const filter: any = {};
     const admin = await User.findById(req.admin);
     if (!admin) {
-      res.status(401).json({ message: 'unauthorized personnel' });
-      return;
+      throw new NotFoundError('Admin does not exist.');
     }
     if (search) {
       filter.$or = [
@@ -69,54 +78,47 @@ export const getAllMembership = async (req: Request, res: Response): Promise<voi
       member: membership,
       count: count,
     };
-    res.status(200).json({ data: profile });
+    res.json({ data: profile });
   } catch (error) {
-    res.status(400).json(error);
+    next(error);
   }
 };
-export const getMembershipById = async (req: Request, res: Response): Promise<void> => {
+export const getMembershipById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   const { id } = req.params;
-
   try {
     const admin = await User.findById(req.admin);
     if (!admin) {
-      res.status(401).json({ message: 'unauthorized personnel' });
-      return;
-    }
-    if (!id) {
-      res.status(400).json({ message: 'ID is required.' });
-      return;
+      throw new NotFoundError('Admin does not exist.');
     }
     const member = await Membership.findById(id);
     if (!member) {
-      res.status(400).json({ message: 'Member does not exist.' });
+      throw new NotFoundError('Membership does not exist.');
     }
-    res.status(200).json({ data: member });
+    res.json({ data: member });
   } catch (error) {
-    res.status(400).json(error);
+    next(error);
   }
 };
 
 export const updateMembershipPointsByPhoneNumber = async (
   req: Request,
   res: Response,
+  next: NextFunction,
 ): Promise<void> => {
+  const { phoneNumber } = req.params;
+  const { points, invoice } = req.body;
   try {
     const admin = await User.findById(req.admin);
     if (!admin) {
-      res.status(401).json({ message: 'unauthorized personnel' });
-      return;
+      throw new NotFoundError('Admin does not exist.');
     }
-
-    const { phoneNumber } = req.params;
-
-    if (!phoneNumber) {
-      res.status(400).json({ message: 'Phone Number is required' });
-      return;
-    }
-    const pointsToSet = req.body.points ?? 0;
+    const pointsToSet = points ?? 0;
     const roundedPoints = parseFloat(pointsToSet).toFixed(2);
-    const newInvoices = Array.isArray(req.body.invoice) ? req.body.invoice : [req.body.invoice]; // Convert string to array
+    const newInvoices = Array.isArray(invoice) ? invoice : [invoice]; // Convert string to array
     const newPoints = await Membership.findOneAndUpdate(
       { phoneNumber: phoneNumber },
       {
@@ -129,8 +131,7 @@ export const updateMembershipPointsByPhoneNumber = async (
       { new: true, runValidators: true },
     );
     if (!newPoints) {
-      res.status(404).json({ message: 'Member not found' });
-      return;
+      throw new BadRequestError('Error updating points.');
     }
 
     const data = {
@@ -138,26 +139,24 @@ export const updateMembershipPointsByPhoneNumber = async (
       updatedBy: admin._id,
     };
 
-    res.status(200).json({ data: data });
+    res.json({ data: data });
   } catch (error) {
-    console.error('Error updating product stock:', error);
-    res.status(500).json({ message: 'Server error', error });
+    next(error);
   }
 };
+
 export const updateMembershipById = async (req: Request, res: Response, next: NextFunction) => {
+  const { id } = req.params;
+  const { phoneNumber, isActive } = req.body;
   try {
     const admin = await User.findById(req.admin);
     if (!admin) {
-      res.status(401).json({ message: 'unauthorized personnel' });
-      return;
+      throw new NotFoundError('Admin does not exist.');
     }
-    const { id } = req.params;
-    const { phoneNumber, isActive, ...data } = req.body;
-    const product = await Membership.findById(id);
+    const membership = await Membership.findById(id);
 
-    if (!product) {
-      res.status(404).json({ message: 'Product not found' });
-      return;
+    if (!membership) {
+      throw new NotFoundError('Membership does not exist.');
     }
 
     const updatedInfo = await Membership.findByIdAndUpdate(
@@ -168,10 +167,10 @@ export const updateMembershipById = async (req: Request, res: Response, next: Ne
         runValidators: true,
       },
     );
-    if (updatedInfo) {
-      res.status(200).json({ data: updatedInfo });
-      return;
+    if (!updatedInfo) {
+      throw new BadRequestError('Error updating membership.');
     }
+    res.json({ data: updatedInfo });
   } catch (error) {
     next(error);
   }

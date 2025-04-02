@@ -1,15 +1,17 @@
-import { Response, Request } from 'express';
+import { Response, Request, NextFunction } from 'express';
 import { CountLog, Log } from '../models/log';
 import { User } from '../models/auth';
+import { BadRequestError, NotFoundError } from '../libs/exceptions';
 
-export const createLog = async (req: Request, res: Response): Promise<void> => {
+export const createLog = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const { riels, dollars, rielTotal, dollarTotal } = req.body;
-  const admin = await User.findById(req.admin);
-  if (!admin) {
-    res.status(401).json({ message: 'unauthorized personnel' });
-    return;
-  }
+
   try {
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      throw new NotFoundError('Admin does not exist.');
+    }
+
     const log = await Log.create({
       createdBy: admin?._id,
       riels,
@@ -18,28 +20,24 @@ export const createLog = async (req: Request, res: Response): Promise<void> => {
       dollarTotal,
     });
     if (!log) {
-      res.status(400).json({ message: 'cannot create log' });
-      return;
+      throw new BadRequestError('Error creating log.');
     }
-    res.status(200).json({ data: log });
+    res.json({ data: log });
   } catch (error) {
-    console.error(error); // Log the error for debugging
-    res.status(500).json({ message: 'Internal server error' });
+    next(error);
   }
 };
 
-export const getLogs = async (req: Request, res: Response): Promise<void> => {
+export const getLogs = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const admin = await User.findById(req.admin);
     if (!admin) {
-      res.status(401).json({ message: 'unauthorized personnel' });
-      return;
+      throw new NotFoundError('Admin does not exist.');
     }
     const log = await Log.find().populate('createdBy');
-    res.status(200).json({ data: log });
+    res.json({ data: log });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Internal server error' });
+    next(error);
   }
 };
 

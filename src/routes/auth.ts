@@ -1,7 +1,7 @@
 import { Router } from 'express';
 const router = Router();
 import {
-  fetchProfile,
+  getAdmin,
   getUserById,
   getUsers,
   signIn,
@@ -12,7 +12,7 @@ import { authentication } from '../middlewares/auth';
 
 router.post('/sign-up', authentication, signUp);
 router.post('/sign-in', signIn);
-router.get('/profile', authentication, fetchProfile);
+router.get('/profile', authentication, getAdmin);
 router.get('/users', authentication, getUsers);
 router.get('/users/:id', authentication, getUserById);
 router.put('/users/update/:id', authentication, updateUserById);

@@ -4,22 +4,21 @@ const router = Router();
 import {
   cancelOrderById,
   createOrder,
-  downloadOrdersExcel,
-  fetchOrderByToday,
-  fetchOrdersByRange,
   getMonthlySale,
+  getOrderByRange,
+  getOrderToday,
   getOrders,
   getPurchasedOrderByProductId,
-  retrieveOrderById,
+  updateOrderById,
 } from '../controllers/OrderController';
 
 router.post('/create', createOrder);
 router.get('/retrieve', getOrders);
 router.get('/sale/monthly', getMonthlySale);
 router.get('/retrieve/:purchasedId', getPurchasedOrderByProductId);
-router.get('/order-today', fetchOrderByToday);
-router.get('/order-range', fetchOrdersByRange);
+router.get('/order-today', getOrderToday);
+router.get('/order-range', getOrderByRange);
 router.put('/update-cancel/:id', cancelOrderById);
-router.put('/update-retrieve/:id', retrieveOrderById);
+router.put('/update-retrieve/:id', updateOrderById);
 
 export default router;

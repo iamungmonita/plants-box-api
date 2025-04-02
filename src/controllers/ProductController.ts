@@ -3,13 +3,13 @@ import { NextFunction, Request, Response } from 'express';
 import { saveBase64Image } from '../helpers/file';
 import { Product } from '../models/products';
 import { User } from '../models/auth';
+import { BadRequestError, MissingParamError, NotFoundError } from '../libs/exceptions';
 
 export const createProduct = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const admin = await User.findById(req.admin);
     if (!admin) {
-      res.status(401).json({ message: 'unauthorized personnel' });
-      return;
+      throw new NotFoundError('Admin does not exist.');
     }
 
     const {
@@ -23,20 +23,14 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
       importedPrice,
       isDiscountable,
     } = req.body;
-
-    if (
-      !name ||
-      !price ||
-      !importedPrice ||
-      !stock ||
-      !category ||
-      !isDiscountable ||
-      !isActive ||
-      !barcode
-    ) {
-      res.status(400).json({ error: 'Missing required fields' });
-      return;
-    }
+    if (!name) throw new MissingParamError('name');
+    if (!price) throw new MissingParamError('price');
+    if (!importedPrice) throw new MissingParamError('importedPrice');
+    if (!stock) throw new MissingParamError('stock');
+    if (!category) throw new MissingParamError('category');
+    if (!isDiscountable) throw new MissingParamError('isDiscountable');
+    if (!isActive) throw new MissingParamError('isActive');
+    if (!barcode) throw new MissingParamError('barcode');
 
     const productInfo = {
       name,
@@ -54,12 +48,7 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
 
     const product = await Product.create(productInfo);
 
-    if (!product) {
-      res.status(400).json({ message: 'cannot create product' });
-    }
-    res.status(200).json({
-      data: product,
-    });
+    res.json({ data: product });
   } catch (error) {
     next(error);
   }
@@ -68,8 +57,11 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
 export const getAllProducts = async (req: Request, res: Response, next: NextFunction) => {
   const { category, search } = req.query;
   try {
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      throw new NotFoundError('Admin does not exist.');
+    }
     const filter: any = {};
-
     if (search) {
       filter.$or = [
         { name: { $regex: search, $options: 'i' } }, // Case-insensitive partial match for name
@@ -90,8 +82,12 @@ export const getAllProducts = async (req: Request, res: Response, next: NextFunc
 
 export const getBestSellingProducts = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      throw new NotFoundError('Admin does not exist.');
+    }
     const products = await Product.find().sort({ soldQty: -1 });
-    res.status(200).json({ success: true, data: products });
+    res.status(200).json({ data: products });
   } catch (error) {
     next(error);
   }
@@ -100,11 +96,15 @@ export const getBestSellingProducts = async (req: Request, res: Response, next: 
 export const getProductById = async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
   try {
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      throw new NotFoundError('Admin does not exist.');
+    }
     const product = await Product.findById(id);
     if (!product) {
-      res.status(400).json({ message: 'cannot find the product' });
+      throw new NotFoundError('Product does not exist.');
     }
-    res.status(200).json({ success: true, data: product });
+    res.json({ data: product });
   } catch (error) {
     next(error);
   }
@@ -115,30 +115,26 @@ export const updateProductQuantityById = async (
   res: Response,
   next: NextFunction,
 ) => {
+  const { id } = req.params;
+  const { qty } = req.body;
   try {
     const admin = await User.findById(req.admin);
     if (!admin) {
-      res.status(401).json({ message: 'unauthorized personnel' });
-      return;
+      throw new NotFoundError('Admin does not exist.');
     }
 
-    const { id } = req.params;
-    const { qty } = req.body;
     if (typeof qty !== 'number' || qty < 0) {
-      res.status(400).json({ message: 'Invalid stock value' });
-      return;
+      throw new BadRequestError('Invalid stock value');
     }
 
     const product = await Product.findById(id);
     if (!product) {
-      res.status(400).json({ message: 'Cannot find product' });
-      return;
+      throw new NotFoundError('Product does not exist.');
     }
 
     if (product.stock < qty) {
-      res.status(400).json({ message: 'product stock is lower than demand.' });
-      return;
-    } // Return null if stock is less than qty
+      throw new BadRequestError('Product stock is lower than demand.');
+    }
 
     const updatedProduct = await Product.findByIdAndUpdate(
       id,
@@ -151,7 +147,7 @@ export const updateProductQuantityById = async (
       updatedBy: admin._id,
     };
 
-    res.status(200).json({ data: data });
+    res.json({ data: data });
   } catch (error) {
     next(error);
   }
@@ -161,30 +157,22 @@ export const updateCancelledProductQuantityById = async (
   res: Response,
   next: NextFunction,
 ) => {
+  const { id } = req.params;
+  const { qty } = req.body;
   try {
     const admin = await User.findById(req.admin);
     if (!admin) {
-      res.status(401).json({ message: 'unauthorized personnel' });
-      return;
+      throw new NotFoundError('Admin does not exist.');
     }
 
-    const { id } = req.params;
-    const { qty } = req.body;
     if (typeof qty !== 'number' || qty < 0) {
-      res.status(400).json({ message: 'Invalid stock value' });
-      return;
+      throw new BadRequestError('Invalid stock value');
     }
 
     const product = await Product.findById(id);
     if (!product) {
-      res.status(400).json({ message: 'Cannot find product' });
-      return;
+      throw new NotFoundError('Product does not exist.');
     }
-
-    // if (product.stock < qty) {
-    //   res.status(400).json({ message: 'product stock is lower than demand.' });
-    //   return;
-    // } // Return null if stock is less than qty
 
     const updatedProduct = await Product.findByIdAndUpdate(
       id,
@@ -197,51 +185,47 @@ export const updateCancelledProductQuantityById = async (
       updatedBy: admin._id,
     };
 
-    res.status(200).json({ data: data });
+    res.json({ data: data });
   } catch (error) {
     next(error);
   }
 };
 
 export const updateProductDetailsById = async (req: Request, res: Response, next: NextFunction) => {
+  const { id } = req.params;
+  const { pictures, stock, ...data } = req.body;
   try {
     const admin = await User.findById(req.admin);
     if (!admin) {
-      res.status(401).json({ message: 'unauthorized personnel' });
-      return;
+      throw new NotFoundError('Admin does not exist.');
     }
-    const { id } = req.params;
-    const { pictures, stock, ...data } = req.body;
+
     const product = await Product.findById(id);
-
     if (!product) {
-      res.status(404).json({ message: 'Product not found' });
-      return;
+      throw new NotFoundError('Product does not exist.');
     }
 
-    // Prepare updates
     const updateData = { ...data, updatedBy: admin._id };
     if (stock !== undefined) {
       const updateNumber = (product?.updatedCount.length || 0) + 1;
       const oldStock = product.stock || 0;
 
       if (stock > oldStock) {
-        // Only update when stock increases
         const addedStock = stock - oldStock;
         const newUpdate = { updateNumber, oldStock, addedStock };
 
         updateData.stock = stock;
         updateData.$push = { updatedCount: newUpdate };
       } else {
-        updateData.stock = stock; // Still update stock, but don't push to updatedCount
+        updateData.stock = stock;
       }
     }
 
     if (pictures === null || pictures === '') {
-      updateData.pictures = null; // Explicitly clear the pictures field
+      updateData.pictures = null;
     } else if (pictures && pictures.startsWith('data:image')) {
       const savedImage = await saveBase64Image(pictures, `product_${Date.now()}`);
-      updateData.pictures = savedImage; // Update with the new image
+      updateData.pictures = savedImage;
     } else {
       updateData.pictures = pictures;
     }
@@ -251,7 +235,7 @@ export const updateProductDetailsById = async (req: Request, res: Response, next
       runValidators: true,
     });
     if (updatedProduct) {
-      res.status(200).json({ data: updatedProduct });
+      res.json({ data: updatedProduct });
       return;
     }
   } catch (error) {
