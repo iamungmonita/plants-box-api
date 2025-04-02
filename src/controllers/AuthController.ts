@@ -26,8 +26,9 @@ export const signUp = async (req: Request, res: Response, next: NextFunction): P
       throw new BadRequestError('All fields are required');
     }
     const fullName = `${firstName} ${lastName}`.trim(); // Combine first and last name
-
     const hashedPassword = await bcrypt.hash(password, 10);
+    if (phoneNumber) {
+    }
     let savedImages = '';
 
     if (pictures && pictures !== '') {
@@ -139,7 +140,7 @@ export const updateUserById = async (
   next: NextFunction,
 ): Promise<void> => {
   const { id } = req.params;
-  const { pictures, firstName, lastName, ...data } = req.body;
+  const { pictures, firstName, lastName, password, ...data } = req.body;
 
   try {
     const admin = await User.findById(req.admin);
@@ -159,6 +160,10 @@ export const updateUserById = async (
       updateData.firstName = firstName ?? user.firstName;
       updateData.lastName = lastName ?? user.lastName;
       updateData.fullName = `${updateData.firstName} ${updateData.lastName}`.trim();
+    }
+
+    if (password) {
+      updateData.password = await bcrypt.hash(password, 10);
     }
 
     if (pictures === null || pictures === '') {
