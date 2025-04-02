@@ -9,7 +9,6 @@ import path from 'path';
 import { User } from '../models/auth';
 import moment from 'moment';
 import { BadRequestError, MissingParamError, NotFoundError } from '../libs/exceptions';
-import next from 'next';
 
 const downloadsDir = path.join(__dirname, '../downloads');
 
