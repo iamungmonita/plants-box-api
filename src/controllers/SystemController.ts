@@ -250,7 +250,7 @@ export const createVoucher = async (
       createdBy: admin._id,
       validFrom: fromDate,
       validTo: toDate,
-      isExpired: !isExpired,
+      isExpired,
       discount,
       barcode,
       ...data,
@@ -345,18 +345,42 @@ export const updateVoucherById = async (
   next: NextFunction,
 ): Promise<void> => {
   const { id } = req.params;
+  const { validFrom, validTo } = req.body;
+
   try {
     const admin = await User.findById(req.admin);
     if (!admin) {
       throw new NotFoundError('Admin does not exist.');
     }
-    const updatedVoucher = await Voucher.findByIdAndUpdate(id, { $set: req.body }, { new: true });
-    const data = {
-      updatedVoucher,
-      updatedBy: admin._id,
-    };
 
-    res.json({ data: data });
+    let updateFields: any = { ...req.body };
+
+    if (validFrom || validTo) {
+      const now = new Date();
+      const toDate = validTo ? new Date(validTo) : undefined;
+
+      // Set isExpired based on validTo
+      if (toDate) {
+        updateFields.isExpired = now > toDate;
+      }
+    }
+
+    const updatedVoucher = await Voucher.findByIdAndUpdate(
+      id,
+      { $set: updateFields },
+      { new: true },
+    );
+
+    if (!updatedVoucher) {
+      throw new NotFoundError('Voucher not found.');
+    }
+
+    res.json({
+      data: {
+        updatedVoucher,
+        updatedBy: admin._id,
+      },
+    });
   } catch (error) {
     next(error);
   }

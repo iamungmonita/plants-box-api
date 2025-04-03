@@ -140,7 +140,7 @@ export const updateUserById = async (
   next: NextFunction,
 ): Promise<void> => {
   const { id } = req.params;
-  const { pictures, firstName, lastName, password, ...data } = req.body;
+  const { pictures, firstName, lastName, ...data } = req.body;
 
   try {
     const admin = await User.findById(req.admin);
@@ -167,10 +167,6 @@ export const updateUserById = async (
       updateData.fullName = `${updateData.firstName} ${updateData.lastName}`.trim();
     }
 
-    if (password) {
-      updateData.password = await bcrypt.hash(password, 10);
-    }
-
     if (pictures === null || pictures === '') {
       updateData.pictures = null; // Explicitly clear the pictures field
     } else if (pictures && pictures.startsWith('data:image')) {
@@ -189,6 +185,46 @@ export const updateUserById = async (
       throw new BadRequestError('Error updating user.');
     }
     res.json({ data: updatedUser });
+  } catch (error) {
+    next(error);
+  }
+};
+export const updateUserPasswordById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  const { id } = req.params;
+  const { password } = req.body;
+
+  try {
+    const admin = await User.findById(req.admin);
+    if (!admin) {
+      throw new NotFoundError('Admin does not exist.');
+    }
+    const user = await User.findById(id);
+
+    if (!user) {
+      throw new NotFoundError('User does not exist.');
+    }
+
+    if (!password) {
+      throw new MissingParamError('password');
+    }
+
+    const newPassword = await bcrypt.hash(password, 10);
+
+    // Update the user with the hashed password
+    const updatedPassword = await User.findByIdAndUpdate(
+      id,
+      { password: newPassword }, // Ensure you're updating the correct field
+      { new: true, runValidators: true },
+    );
+
+    if (!updatedPassword) {
+      throw new BadRequestError('Error updating user.');
+    }
+    res.json({ data: updatedPassword });
   } catch (error) {
     next(error);
   }
