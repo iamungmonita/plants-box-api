@@ -245,19 +245,21 @@ export const createVoucher = async (
     const fromDate = new Date(validFrom);
     const toDate = new Date(validTo);
 
-    const isExpired = now >= fromDate && now <= toDate;
-
-    const voucher = await Voucher.create({
+    const isExpired = now > toDate;
+    const bodyParam = {
       createdBy: admin._id,
       validFrom: fromDate,
       validTo: toDate,
       isExpired: !isExpired,
+      discount,
+      barcode,
       ...data,
-    });
+    };
+    const voucher = await Voucher.create(bodyParam);
 
-    res.status(200).json({ data: voucher });
+    res.json({ data: voucher });
   } catch (error) {
-    res.status(500).json({ message: 'An unexpected error occurred' });
+    next(error);
   }
 };
 

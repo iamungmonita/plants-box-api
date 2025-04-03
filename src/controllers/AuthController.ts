@@ -153,6 +153,11 @@ export const updateUserById = async (
       throw new NotFoundError('User does not exist.');
     }
 
+    const isUserHasExisted = await User.findOne({ email: data.email, _id: { $ne: user.id } });
+    if (isUserHasExisted) {
+      throw new BadRequestError('This emails has already registered with the system');
+    }
+
     const updateData = { ...data };
     updateData.updatedBy = admin._id; // Explicitly include createdBy
 
@@ -185,11 +190,6 @@ export const updateUserById = async (
     }
     res.json({ data: updatedUser });
   } catch (error) {
-    const err = error as { code?: number };
-    if (err.code === 11000) {
-      next(new DuplicatedParamError('email', 11000));
-    } else {
-      next(error);
-    }
+    next(error);
   }
 };
