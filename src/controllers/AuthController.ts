@@ -1,12 +1,12 @@
 import bcrypt from 'bcryptjs';
 import { NextFunction, Request, Response } from 'express';
-import { config } from '../config/config'; // Import the config file
+
 import { saveBase64Image } from '../helpers/file';
-import { User } from '../models/auth';
-import { initialCount } from './LogController';
 import { Token } from '../helpers/token';
 import { BadRequestError, DuplicatedParamError, MissingParamError, NotFoundError } from '../libs';
+import { User } from '../models/auth';
 import { Role } from '../models/system';
+import { initialCount } from './LogController';
 
 export const signUp = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const { firstName, lastName, role, codes, email, password, phoneNumber, isActive, pictures } =
@@ -76,7 +76,7 @@ export const signIn = async (req: Request, res: Response, next: NextFunction): P
       throw new MissingParamError('password');
     }
 
-    const user = await User.findOne({ email, isActive: true });
+    const user = await User.findOne({ email });
     if (!user) {
       throw new BadRequestError('User does not existed');
     }
@@ -86,7 +86,7 @@ export const signIn = async (req: Request, res: Response, next: NextFunction): P
     }
 
     const initialLog = await initialCount(user._id.toString());
-    const token = new Token(user._id.toString(), user.firstName).generateToken(config.secretKey);
+    const token = new Token(user._id.toString(), user.firstName).generateToken();
     const data = { token, initialLog };
 
     res.json({ data: data });
@@ -147,8 +147,8 @@ export const updateUserById = async (
     if (!admin) {
       throw new NotFoundError('Admin does not exist.');
     }
-    const user = await User.findById(id);
 
+    const user = await User.findById(id);
     if (!user) {
       throw new NotFoundError('User does not exist.');
     }

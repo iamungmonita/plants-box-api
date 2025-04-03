@@ -1,5 +1,5 @@
 import { config } from '../config/config';
-import jwt from 'jsonwebtoken';
+import { signJWT } from '../utils/jwt';
 
 export class Token {
   id: string;
@@ -10,10 +10,11 @@ export class Token {
     this.firstName = firstName;
   }
 
-  generateToken = (secretKey: string) => {
-    const token = jwt.sign({ id: this.id, firstName: this.firstName }, secretKey, {
-      expiresIn: config.tokenExpiration,
-    });
+  generateToken() {
+    const payload = { id: this.id, firstName: this.firstName };
+    const expiration = config.tokenExpiration;
+
+    const token = signJWT(payload, expiration)
     return token;
   };
 }
