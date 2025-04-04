@@ -17,17 +17,21 @@ export function signJWT(payload: string | Buffer | object, expiresIn: string | n
 
 export function verifyJWTToken(token: string): Promise<string | jwt.JwtPayload | undefined> {
   return new Promise((resolve) => {
-    jwt.verify(token, process.env.JWT_SECRET ?? '', (error, decoded: string | jwt.JwtPayload | undefined) => {
-      if (error) {
-        throw new UnauthorizedError('Invalid Access Token', ErrorCode.InvalidToken);
-      }
-      const decodedToken = jwt.decode(token) as jwt.JwtPayload;
-      const hasExpired = moment(decodedToken.expiresIn).isBefore(new Date());
-      if (hasExpired) {
-        throw new UnauthorizedError('Invalid Access Token', ErrorCode.InvalidToken);
-      }
-      resolve(decodedToken);
-    });
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET ?? '',
+      (error, decoded: string | jwt.JwtPayload | undefined) => {
+        if (error) {
+          throw new UnauthorizedError('Invalid Access Token', ErrorCode.InvalidToken);
+        }
+        const decodedToken = jwt.decode(token) as jwt.JwtPayload;
+        const hasExpired = moment(decodedToken.expiresIn).isBefore(new Date());
+        if (hasExpired) {
+          throw new UnauthorizedError('Invalid Access Token', ErrorCode.InvalidToken);
+        }
+        resolve(decodedToken);
+      },
+    );
   });
 }
 

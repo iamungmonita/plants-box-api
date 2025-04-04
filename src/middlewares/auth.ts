@@ -9,7 +9,6 @@ import { verifyJWTToken } from '../utils/jwt';
 
 dotenv.config();
 
-
 export const authentication = async (
   req: Request,
   res: Response,
@@ -37,7 +36,7 @@ export const authentication = async (
     const userId = payload.id;
     const admin = User.findOne({ _id: userId, isActive: true });
     if (!admin) {
-      throw new UnauthorizedError("Unauthorized user credential");
+      throw new UnauthorizedError('Unauthorized user credential');
     }
     req.admin = userId;
     next();

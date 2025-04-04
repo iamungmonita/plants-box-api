@@ -25,9 +25,9 @@ export const saveBase64Image = (base64String: string, filename: string): string 
 
 export const wrapAsync =
   <T>(fn: ExpressHandler<T>) =>
-    (req: express.Request, res: express.Response, next: express.NextFunction) =>
-      fn(req, res, next)
-        .then((result) => {
-          return res.json(result) as any;
-        }) // Automatically send the result as JSON
-        .catch(next); // Automatically catches errors and passes them to the next error handler
+  (req: express.Request, res: express.Response, next: express.NextFunction) =>
+    fn(req, res, next)
+      .then((result) => {
+        return res.json(result) as any;
+      }) // Automatically send the result as JSON
+      .catch(next); // Automatically catches errors and passes them to the next error handler

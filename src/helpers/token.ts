@@ -14,7 +14,7 @@ export class Token {
     const payload = { id: this.id, firstName: this.firstName };
     const expiration = config.tokenExpiration;
 
-    const token = signJWT(payload, expiration)
+    const token = signJWT(payload, expiration);
     return token;
-  };
+  }
 }

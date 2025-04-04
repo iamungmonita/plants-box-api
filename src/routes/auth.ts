@@ -1,5 +1,5 @@
 import { Router } from 'express';
-const router = Router();
+
 import {
   getAdmin,
   getUserById,
@@ -11,6 +11,7 @@ import {
 } from '../controllers/AuthController';
 import { authentication } from '../middlewares/auth';
 
+const router = Router();
 router.post('/sign-up', authentication, signUp);
 router.post('/sign-in', signIn);
 router.get('/profile', authentication, getAdmin);
