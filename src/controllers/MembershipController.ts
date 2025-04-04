@@ -1,12 +1,8 @@
-import { Response, Request, NextFunction } from 'express';
-import { Membership } from '../models/membership';
+import { NextFunction, Request, Response } from 'express';
+
+import { BadRequestError, MissingParamError, NotFoundError } from '../libs/exceptions';
 import { User } from '../models/auth';
-import {
-  BadRequestError,
-  DuplicatedParamError,
-  MissingParamError,
-  NotFoundError,
-} from '../libs/exceptions';
+import { Membership } from '../models/membership';
 
 export const createMembership = async (
   req: Request,
@@ -26,15 +22,20 @@ export const createMembership = async (
     if (!invoices) throw new MissingParamError('invoices');
     if (!points) throw new MissingParamError('points');
 
-    const membership = await Membership.create({
+    const hasRegisterWithPhoneNumber = await Membership.findOne({ phoneNumber });
+    if (hasRegisterWithPhoneNumber) {
+      throw new BadRequestError('This Phone number has registered as membership');
+    }
+    const bodyParam = {
       phoneNumber,
       type,
       isActive,
       invoices,
       points,
-      createdBy: admin._id,
-      updatedBy: admin._id,
-    });
+      createdBy: admin,
+      updatedBy: admin,
+    };
+    const membership = await Membership.create(bodyParam);
 
     if (!membership) {
       throw new BadRequestError('Error creating membership.');
@@ -42,12 +43,7 @@ export const createMembership = async (
 
     res.json({ data: membership });
   } catch (error) {
-    const err = error as { code?: number };
-    if (err.code === 11000) {
-      next(new DuplicatedParamError('phoneNumber', 11000));
-    } else {
-      next(error);
-    }
+    next(error);
   }
 };
 
@@ -68,21 +64,20 @@ export const getAllMembership = async (
         { phoneNumber: { $regex: search, $options: 'i' } }, // Case-insensitive partial match for name
       ];
     }
+
     if (type) {
       Object.assign(filter, { type }); // Exact match since it's an autocomplete value
     }
 
-    const membership = await Membership.find(filter).populate('createdBy');
-    const count = membership.length;
-    const profile = {
-      member: membership,
-      count: count,
-    };
+    const member = await Membership.find(filter).populate('createdBy');
+    const count = member.length;
+    const profile = { member, count };
     res.json({ data: profile });
   } catch (error) {
     next(error);
   }
 };
+
 export const getMembershipById = async (
   req: Request,
   res: Response,
@@ -109,13 +104,14 @@ export const updateMembershipPointsByPhoneNumber = async (
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
-  const { phoneNumber } = req.params;
-  const { points, invoice } = req.body;
   try {
+    const { phoneNumber } = req.params;
+    const { points, invoice } = req.body;
     const admin = await User.findById(req.admin);
     if (!admin) {
       throw new NotFoundError('Admin does not exist.');
     }
+
     const pointsToSet = points ?? 0;
     const roundedPoints = parseFloat(pointsToSet).toFixed(2);
     const newInvoices = Array.isArray(invoice) ? invoice : [invoice]; // Convert string to array
@@ -146,15 +142,16 @@ export const updateMembershipPointsByPhoneNumber = async (
 };
 
 export const updateMembershipById = async (req: Request, res: Response, next: NextFunction) => {
-  const { id } = req.params;
-  const { phoneNumber, isActive } = req.body;
   try {
+    const { id } = req.params;
+    const { phoneNumber, isActive } = req.body;
+
     const admin = await User.findById(req.admin);
     if (!admin) {
       throw new NotFoundError('Admin does not exist.');
     }
-    const membership = await Membership.findById(id);
 
+    const membership = await Membership.findById(id);
     if (!membership) {
       throw new NotFoundError('Membership does not exist.');
     }
