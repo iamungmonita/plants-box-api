@@ -41,8 +41,6 @@ export const authentication = async (
     req.admin = userId;
     next();
   } catch (error) {
-    console.error('Token verification failed:', error);
-    res.status(403).json({ message: 'Invalid token' });
-    return;
+    next(error);
   }
 };

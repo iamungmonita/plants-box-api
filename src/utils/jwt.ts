@@ -25,10 +25,6 @@ export function verifyJWTToken(token: string): Promise<string | jwt.JwtPayload |
           throw new UnauthorizedError('Invalid Access Token', ErrorCode.InvalidToken);
         }
         const decodedToken = jwt.decode(token) as jwt.JwtPayload;
-        const hasExpired = moment(decodedToken.expiresIn).isBefore(new Date());
-        if (hasExpired) {
-          throw new UnauthorizedError('Invalid Access Token', ErrorCode.InvalidToken);
-        }
         resolve(decodedToken);
       },
     );
