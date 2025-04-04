@@ -1,31 +1,44 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+import { NextFunction, Request, Response } from 'express';
+import { JwtPayload } from 'jsonwebtoken';
+
+import { TokenType } from '../enums/TokenType';
+import { UnauthorizedError } from '../libs';
+import { User } from '../models/auth';
+import { verifyJWTToken } from '../utils/jwt';
 
 dotenv.config();
-
-const SECRET_KEY = process.env.JWT_SECRET || 'your-secret-key';
 
 export const authentication = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    res.status(401).json({ message: 'No authentication token provided' });
-    return;
-  }
-
-  const token = authHeader.split(' ')[1];
-
   try {
-    const decoded = jwt.verify(token, SECRET_KEY);
-
-    if (typeof decoded === 'object' && 'id' in decoded) {
-      req.admin = decoded.id;
+    const authorization = req.headers['authorization'];
+    if (!authorization) {
+      throw new UnauthorizedError('Authorization header is missing.');
     }
+
+    // Extract token from the header
+    const [bearer, token] = authorization.split(' ');
+    if (bearer !== TokenType.Bearer || !token) {
+      throw new UnauthorizedError('Invalid authorization format. Expected: "Bearer <token>".');
+    }
+
+    // Decoded JWT Payload
+    const payload = (await verifyJWTToken(token)) as JwtPayload;
+    if (!payload?.id) {
+      throw new UnauthorizedError('Invalid token payload. Missing `userId`.');
+    }
+
+    // Validate If User has registered
+    const userId = payload.id;
+    const admin = User.findOne({ _id: userId, isActive: true });
+    if (!admin) {
+      throw new UnauthorizedError('Unauthorized user credential');
+    }
+    req.admin = userId;
     next();
   } catch (error) {
     console.error('Token verification failed:', error);
