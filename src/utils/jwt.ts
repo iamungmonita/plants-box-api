@@ -1,18 +1,23 @@
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions, Secret } from 'jsonwebtoken';
 import moment from 'moment';
 
 import { ErrorCode } from '../enums';
 import { UnauthorizedError } from '../libs';
 
-export function generateAccessToken(userId: number | string, expiresIn: string | number): string {
-  const secret = process.env.JWT_SECRET ?? ('JWT_SECRET' as string);
-  return jwt.sign({ userId, expiresIn }, secret);
-}
+// export function generateAccessToken(userId: number | string, expiresIn: string | number): string {
+//   const secret = process.env.JWT_SECRET ?? ('JWT_SECRET' as string);
+//   return jwt.sign({ userId, expiresIn }, secret);
+// }
 
 export function signJWT(payload: string | Buffer | object, expiresIn: string | number): string {
-  const secret = process.env.JWT_SECRET ?? ('JWT_SECRET' as string);
-  Object.assign(payload, { expiresIn });
-  return jwt.sign(payload, secret);
+  const secret: Secret = process.env.JWT_SECRET ?? 'default_secret_key';
+
+  // Explicitly cast expiresIn to the correct type
+  const options: SignOptions = {
+    expiresIn: expiresIn as SignOptions['expiresIn'],
+  };
+
+  return jwt.sign(payload, secret, options);
 }
 
 export function verifyJWTToken(token: string): Promise<string | jwt.JwtPayload | undefined> {

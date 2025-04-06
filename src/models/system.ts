@@ -4,6 +4,7 @@ import { User } from './auth'; // Ensure this is the correct path
 interface IRole extends Document {
   name: string;
   codes: string[];
+  updatedBy: Schema.Types.ObjectId;
   createdBy: Schema.Types.ObjectId;
   remark?: string;
   isActive: boolean;
@@ -14,7 +15,8 @@ const roleSchema = new Schema<IRole>(
   {
     name: { type: String, required: true, trim: true },
     codes: { type: [String], required: true },
-    createdBy: { type: Schema.Types.ObjectId, ref: 'users', required: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     remark: { type: String },
     isActive: { type: Boolean, default: true },
   },
@@ -40,8 +42,8 @@ const expenseSchema = new Schema(
     amount: { type: Number, required: true, min: 0 },
     date: { type: Date, required: true, default: Date.now },
     remarks: { type: String, trim: true },
-    createdBy: { type: Schema.Types.ObjectId, ref: 'users', required: true },
-    updatedBy: { type: Schema.Types.ObjectId, ref: 'users', required: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     supplier: { type: String, trim: true },
     invoice: { type: String, trim: true },
   },
@@ -58,8 +60,8 @@ const voucherSchema = new Schema(
     validTo: { type: Date, required: true },
     isActive: { type: Boolean, default: true },
     isExpired: { type: Boolean, default: true },
-    updatedBy: { type: String },
-    createdBy: { type: Schema.Types.ObjectId, ref: 'users', required: true },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },
   { timestamps: true },
 );

@@ -6,7 +6,6 @@ import { Product } from '../models/products';
 import ExcelJS from 'exceljs';
 import fs from 'fs';
 import path from 'path';
-import { User } from '../models/auth';
 import moment from 'moment';
 import { BadRequestError, MissingParamError, NotFoundError } from '../libs/exceptions';
 
@@ -23,17 +22,12 @@ export const createOrder = async (
 ): Promise<void> => {
   const { items, profile, phoneNumber, orderId, ...body } = req.body;
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
-
     if (!items || !Array.isArray(items) || items.length === 0) {
       throw new BadRequestError('No order has been placed.');
     }
     for (const item of items) {
       const { _id, quantity } = item;
-      const product = await Product.findById(_id);
+      const product = await Product.findOne({ _id: _id, isActive: true });
       if (!product) {
         throw new NotFoundError(`Product with ID: ${_id} not found.`);
       }
@@ -47,7 +41,7 @@ export const createOrder = async (
 
     let memberInfo = null;
     if (phoneNumber) {
-      const member = await Membership.findOne({ phoneNumber: phoneNumber });
+      const member = await Membership.findOne({ phoneNumber, isActive: true });
       if (!member) {
         throw new NotFoundError('No membership found.');
       }
@@ -63,8 +57,8 @@ export const createOrder = async (
       orderStatus: OrderStatus.COMPLETE,
       paymentStatus: PaymentStatus.COMPLETE,
       member: memberInfo,
-      createdBy: admin._id,
-      updatedBy: admin._id,
+      createdBy: req.admin,
+      updatedBy: req.admin,
       ...body,
     });
     res.status(200).json({ data: order });
@@ -125,10 +119,6 @@ export const getOrderToday = async (
 ): Promise<void> => {
   const { date } = req.query;
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
     if (!date) {
       throw new MissingParamError('date');
     }
@@ -303,12 +293,7 @@ export const downloadOrdersExcel = async (req: Request, res: Response, next: Nex
 export const cancelOrderById = async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
-
-    const order = await Order.findById(id);
+    const order = await Order.findOne({ _id: id, isActive: true });
     if (!order) {
       throw new NotFoundError('Admin does not exist.');
     }
@@ -320,7 +305,7 @@ export const cancelOrderById = async (req: Request, res: Response, next: NextFun
           totalAmount: 0,
           orderStatus: OrderStatus.CANCELLED,
           paymentStatus: PaymentStatus.CANCELLED,
-          updatedBy: admin._id,
+          updatedBy: req.admin,
         },
       },
       { new: true, runValidators: true },
@@ -335,12 +320,7 @@ export const updateOrderById = async (req: Request, res: Response, next: NextFun
   const { id } = req.params;
   const { total } = req.body;
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
-
-    const order = await Order.findById(id);
+    const order = await Order.findOne({ _id: id, isActive: true });
     if (!order) {
       throw new NotFoundError('Order does not exist.');
     }
@@ -352,7 +332,7 @@ export const updateOrderById = async (req: Request, res: Response, next: NextFun
           totalAmount: total,
           orderStatus: OrderStatus.COMPLETE,
           paymentStatus: PaymentStatus.COMPLETE,
-          updatedBy: admin._id,
+          updatedBy: req.admin,
         },
       },
       { new: true, runValidators: true },

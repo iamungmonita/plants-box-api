@@ -12,9 +12,8 @@ export class Token {
 
   generateToken() {
     const payload = { id: this.id, firstName: this.firstName };
-    const expiration = config.tokenExpiration;
-
-    const token = signJWT(payload, expiration);
+    const expirationInSeconds = config.getTokenExpirationInSeconds();
+    const token = signJWT(payload, expirationInSeconds);
     return token;
   }
 }

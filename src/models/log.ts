@@ -4,7 +4,7 @@ const log = new mongoose.Schema(
   {
     createdBy: {
       type: Schema.Types.ObjectId,
-      ref: 'users', // Reference to the User collection
+      ref: 'User', // Reference to the User collection
       required: true,
     },
     riels: { type: mongoose.Schema.Types.Mixed, required: true }, // Riels (mixed structure)
@@ -16,7 +16,7 @@ const log = new mongoose.Schema(
     timestamps: true, // Automatically adds createdAt and updatedAt fields
   },
 );
-export const Log = mongoose.model('logs', log);
+export const Log = mongoose.model('Log', log);
 
 const countLog = new mongoose.Schema(
   {
@@ -27,4 +27,4 @@ const countLog = new mongoose.Schema(
   },
 );
 
-export const CountLog = mongoose.model('count_logs', countLog);
+export const CountLog = mongoose.model('Count', countLog);

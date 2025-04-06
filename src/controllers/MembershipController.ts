@@ -12,17 +12,13 @@ export const createMembership = async (
   const { type, phoneNumber, invoices, isActive, points } = req.body;
 
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
     if (!type) throw new MissingParamError('type');
     if (!phoneNumber) throw new MissingParamError('phoneNumber');
     if (!isActive) throw new MissingParamError('isActive');
     if (!invoices) throw new MissingParamError('invoices');
     if (!points) throw new MissingParamError('points');
 
-    const hasRegisterWithPhoneNumber = await Membership.findOne({ phoneNumber });
+    const hasRegisterWithPhoneNumber = await Membership.findOne({ phoneNumber, isActive: true });
     if (hasRegisterWithPhoneNumber) {
       throw new BadRequestError('This Phone number has registered as membership');
     }
@@ -32,8 +28,8 @@ export const createMembership = async (
       isActive,
       invoices,
       points,
-      createdBy: admin,
-      updatedBy: admin,
+      createdBy: req.admin,
+      updatedBy: req.admin,
     };
     const membership = await Membership.create(bodyParam);
 
@@ -55,10 +51,6 @@ export const getAllMembership = async (
   const { search, type } = req.query;
   try {
     const filter: any = {};
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
     if (search) {
       filter.$or = [
         { phoneNumber: { $regex: search, $options: 'i' } }, // Case-insensitive partial match for name
@@ -69,7 +61,7 @@ export const getAllMembership = async (
       Object.assign(filter, { type }); // Exact match since it's an autocomplete value
     }
 
-    const member = await Membership.find(filter).populate('createdBy');
+    const member = await Membership.find(filter).populate('createdBy').populate('updatedBy');
     const count = member.length;
     const profile = { member, count };
     res.json({ data: profile });
@@ -85,11 +77,7 @@ export const getMembershipById = async (
 ): Promise<void> => {
   const { id } = req.params;
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
-    const member = await Membership.findById(id);
+    const member = await Membership.findOne({ _id: id, isActive: true });
     if (!member) {
       throw new NotFoundError('Membership does not exist.');
     }
@@ -104,23 +92,22 @@ export const updateMembershipPointsByPhoneNumber = async (
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
+  const { phoneNumber } = req.params;
+  const { points, invoice } = req.body;
   try {
-    const { phoneNumber } = req.params;
-    const { points, invoice } = req.body;
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
+    const member = await Membership.findOne({ phoneNumber, isActive: true });
+    if (!member) {
+      throw new NotFoundError('Membership does not exist.');
     }
-
     const pointsToSet = points ?? 0;
     const roundedPoints = parseFloat(pointsToSet).toFixed(2);
     const newInvoices = Array.isArray(invoice) ? invoice : [invoice]; // Convert string to array
     const newPoints = await Membership.findOneAndUpdate(
-      { phoneNumber: phoneNumber },
+      { phoneNumber, isActive: true },
       {
         $set: {
-          points: roundedPoints, // ✅ Set new points value
-          invoices: newInvoices, // ✅ Replace `invoices` array instead of appending
+          points: roundedPoints,
+          invoices: newInvoices,
         },
       },
 
@@ -132,7 +119,7 @@ export const updateMembershipPointsByPhoneNumber = async (
 
     const data = {
       newPoints,
-      updatedBy: admin._id,
+      updatedBy: req.admin,
     };
 
     res.json({ data: data });
@@ -146,12 +133,7 @@ export const updateMembershipById = async (req: Request, res: Response, next: Ne
     const { id } = req.params;
     const { phoneNumber, isActive } = req.body;
 
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
-
-    const membership = await Membership.findById(id);
+    const membership = await Membership.findOne({ _id: id, isActive: true });
     if (!membership) {
       throw new NotFoundError('Membership does not exist.');
     }

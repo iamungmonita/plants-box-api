@@ -1,6 +1,5 @@
 import bcrypt from 'bcryptjs';
 import { NextFunction, Request, Response } from 'express';
-
 import { saveBase64Image } from '../helpers/file';
 import { Token } from '../helpers/token';
 import { BadRequestError, DuplicatedParamError, MissingParamError, NotFoundError } from '../libs';
@@ -12,12 +11,7 @@ export const signUp = async (req: Request, res: Response, next: NextFunction): P
   const { firstName, lastName, role, codes, email, password, phoneNumber, isActive, pictures } =
     req.body;
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
-
-    const position = await Role.findById(role);
+    const position = await Role.findOne({ _id: role, isActive: true });
     if (!position) {
       throw new NotFoundError('Role does not exist.');
     }
@@ -46,8 +40,8 @@ export const signUp = async (req: Request, res: Response, next: NextFunction): P
       isActive,
       codes,
       pictures: savedImages,
-      createdBy: admin._id,
-      updatedBy: admin._id,
+      createdBy: req.admin,
+      updatedBy: req.admin,
     });
 
     if (!user) {
@@ -76,7 +70,7 @@ export const signIn = async (req: Request, res: Response, next: NextFunction): P
       throw new MissingParamError('password');
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email, isActive: true });
     if (!user) {
       throw new BadRequestError('User does not existed');
     }
@@ -97,7 +91,7 @@ export const signIn = async (req: Request, res: Response, next: NextFunction): P
 
 export const getAdmin = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const admin = await User.findById(req.admin);
+    const admin = await User.findOne({ _id: req.admin, isActive: true });
     if (!admin) {
       throw new NotFoundError('Admin does not existed');
     }
@@ -123,7 +117,7 @@ export const getUserById = async (
 ): Promise<void> => {
   const { id } = req.params;
   try {
-    const user = await User.findById(id);
+    const user = await User.findOne({ _id: id, isActive: true });
     if (!user) {
       throw new NotFoundError('User does not exist.');
     }
@@ -143,23 +137,18 @@ export const updateUserById = async (
   const { pictures, firstName, lastName, ...data } = req.body;
 
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
-
-    const user = await User.findById(id);
+    const user = await User.findOne({ _id: id, isActive: true });
     if (!user) {
       throw new NotFoundError('User does not exist.');
     }
 
-    const isUserHasExisted = await User.findOne({ email: data.email, _id: { $ne: user.id } });
-    if (isUserHasExisted) {
+    const isEmailExisted = await User.findOne({ email: data.email, _id: { $ne: user.id } });
+    if (isEmailExisted) {
       throw new BadRequestError('This emails has already registered with the system');
     }
 
     const updateData = { ...data };
-    updateData.updatedBy = admin._id; // Explicitly include createdBy
+    updateData.updatedBy = req.admin; // Explicitly include createdBy
 
     if (firstName !== undefined || lastName !== undefined) {
       updateData.firstName = firstName ?? user.firstName;
@@ -196,25 +185,15 @@ export const updateUserPasswordById = async (
 ): Promise<void> => {
   const { id } = req.params;
   const { password } = req.body;
-
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
-    const user = await User.findById(id);
-
+    const user = await User.findOne({ _id: id, isActive: true });
     if (!user) {
       throw new NotFoundError('User does not exist.');
     }
-
     if (!password) {
       throw new MissingParamError('password');
     }
-
     const newPassword = await bcrypt.hash(password, 10);
-
-    // Update the user with the hashed password
     const updatedPassword = await User.findByIdAndUpdate(
       id,
       { password: newPassword }, // Ensure you're updating the correct field

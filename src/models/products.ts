@@ -26,18 +26,17 @@ const product = new mongoose.Schema(
     soldQty: { type: Number, default: 0 },
     updatedBy: {
       type: Schema.Types.ObjectId,
-      ref: 'users',
+      ref: 'User',
       required: true,
-      // Reference to the User collection
     },
     createdBy: {
       type: Schema.Types.ObjectId,
-      ref: 'users', // Reference to the User collection
+      ref: 'User',
       required: true,
     },
   },
   {
-    timestamps: true, // Adds createdAt and updatedAt fields
+    timestamps: true,
   },
 );
 

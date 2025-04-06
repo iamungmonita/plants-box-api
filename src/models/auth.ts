@@ -55,13 +55,13 @@ const user = new mongoose.Schema(
     pictures: { type: String }, // Array of image URLs/paths
     updatedBy: {
       type: Schema.Types.ObjectId,
-      ref: 'users', // Reference to the User collection
+      ref: 'User', // Reference to the User collection
       required: false,
       default: null,
     },
     createdBy: {
       type: Schema.Types.ObjectId,
-      ref: 'users', // Reference to the User collection
+      ref: 'User', // Reference to the User collection
       required: false,
       default: null,
     },
@@ -71,4 +71,4 @@ const user = new mongoose.Schema(
   },
 );
 
-export const User = mongoose.model('users', user);
+export const User = mongoose.model('User', user);

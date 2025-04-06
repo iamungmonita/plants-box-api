@@ -31,7 +31,9 @@ export const authentication = async (
     if (!payload?.id) {
       throw new UnauthorizedError('Invalid token payload. Missing `userId`.');
     }
-
+    if (!payload?.exp || payload.exp * 1000 < Date.now()) {
+      throw new UnauthorizedError('Token has expired.');
+    }
     // Validate If User has registered
     const userId = payload.id;
     const admin = User.findOne({ _id: userId, isActive: true });
