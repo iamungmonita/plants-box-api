@@ -43,12 +43,12 @@ const orderSchema = new mongoose.Schema(
     paymentMethod: { type: String, required: true },
     createdBy: {
       type: Schema.Types.ObjectId,
-      ref: 'users', // Reference to the User collection
+      ref: 'User', // Reference to the User collection
       required: true,
     },
     updatedBy: {
       type: Schema.Types.ObjectId,
-      ref: 'users', // Reference to the User collection
+      ref: 'User', // Reference to the User collection
       required: true,
     },
     totalDiscountValue: { type: Number, required: true },

@@ -24,12 +24,12 @@ const membership = new mongoose.Schema(
     },
     createdBy: {
       type: Schema.Types.ObjectId,
-      ref: 'users', // Reference to the User collection
+      ref: 'User', // Reference to the User collection
       required: true,
     },
     updatedBy: {
       type: Schema.Types.ObjectId,
-      ref: 'users', // Reference to the User collection
+      ref: 'User', // Reference to the User collection
       required: true,
     },
     points: {
@@ -42,4 +42,4 @@ const membership = new mongoose.Schema(
   },
 );
 
-export const Membership = mongoose.model('membership', membership);
+export const Membership = mongoose.model('Membership', membership);

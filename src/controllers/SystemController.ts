@@ -11,11 +11,6 @@ export const createRole = async (
 ): Promise<void> => {
   const { name, remarks, codes, isActive } = req.body;
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
-
     if (!name || !codes || !isActive) {
       res.status(400).json({ message: 'All fields are required' });
       return;
@@ -28,7 +23,8 @@ export const createRole = async (
       codes,
       remarks,
       isActive,
-      createdBy: admin._id,
+      createdBy: req.admin,
+      updatedBy: req.admin,
     });
 
     res.json({ data: role });
@@ -39,12 +35,7 @@ export const createRole = async (
 
 export const getRoles = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
-
-    const roles = await Role.find().populate('createdBy');
+    const roles = await Role.find().populate('createdBy').populate('updatedBy');
 
     res.json({ data: roles });
   } catch (error) {
@@ -58,11 +49,7 @@ export const getRoleById = async (
 ): Promise<void> => {
   const { id } = req.params;
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
-    const role = await Role.findById(id);
+    const role = await Role.findOne({ _id: id, isActive: true });
     if (!role) {
       throw new NotFoundError('Role does not exist.');
     }
@@ -79,18 +66,18 @@ export const updateRoleById = async (
 ): Promise<void> => {
   const { id } = req.params;
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
-    const role = await Role.findById(id);
+    const role = await Role.findOne({ _id: id, isActive: true });
     if (!role) {
       throw new NotFoundError('Role does not exist.');
     }
-    const updatedRole = await Role.findOneAndUpdate({ _id: id }, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const updatedRole = await Role.findOneAndUpdate(
+      { _id: id },
+      { ...req.body, updatedBy: req.admin },
+      {
+        new: true,
+        runValidators: true,
+      },
+    );
     res.json({ data: updatedRole });
   } catch (error) {
     next(error);
@@ -105,11 +92,6 @@ export const createExpense = async (
   const { category, amount, remarks, supplier, ...data } = req.body;
 
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
-
     if (!amount) throw new MissingParamError('amount');
     if (!supplier) throw new MissingParamError('supplier');
     if (!category) throw new MissingParamError('category');
@@ -118,8 +100,8 @@ export const createExpense = async (
       supplier,
       remarks,
       category,
-      createdBy: admin._id,
-      updatedBy: admin._id,
+      createdBy: req.admin,
+      updatedBy: req.admin,
       ...data,
     });
 
@@ -135,12 +117,7 @@ export const getAllExpenses = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
     const expenses = await Expense.find().populate('createdBy').populate('updatedBy');
-
     res.json({ data: expenses });
   } catch (error) {
     next(error);
@@ -154,11 +131,7 @@ export const getExpenseById = async (
 ): Promise<void> => {
   const { id } = req.params;
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
-    const expense = await Expense.findById(id);
+    const expense = await Expense.findOne({ _id: id, isActive: true });
 
     if (!expense) {
       throw new NotFoundError('Expense does not exist.');
@@ -176,13 +149,13 @@ export const updateExpenseById = async (
 ): Promise<void> => {
   const { id } = req.params;
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
+    const expense = await Expense.findOne({ _id: id, isActive: true });
+    if (!expense) {
+      throw new NotFoundError('Expense does not exist.');
     }
     const updatedExpense = await Expense.findByIdAndUpdate(
       id,
-      { $set: { ...req.body, updatedBy: admin._id } },
+      { $set: { ...req.body, updatedBy: req.admin } },
       { new: true },
     );
 
@@ -232,10 +205,6 @@ export const createVoucher = async (
   const { validFrom, validTo, discount, barcode, ...data } = req.body;
 
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
     if (!barcode) throw new MissingParamError('barcode');
     if (!discount) throw new MissingParamError('discount');
     if (!validTo) throw new MissingParamError('validTo');
@@ -247,7 +216,8 @@ export const createVoucher = async (
 
     const isExpired = now > toDate;
     const bodyParam = {
-      createdBy: admin._id,
+      createdBy: req.admin,
+      updatedBy: req.admin,
       validFrom: fromDate,
       validTo: toDate,
       isExpired,
@@ -271,17 +241,14 @@ export const getAllVouchers = async (
   const { search } = req.query;
   try {
     const filter: any = {};
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
+
     if (search) {
       filter.$or = [
         { name: { $regex: search, $options: 'i' } },
         { barcode: { $regex: search, $options: 'i' } },
       ];
     }
-    const vouchers = await Voucher.find(filter).populate('createdBy');
+    const vouchers = await Voucher.find(filter).populate('createdBy').populate('updatedBy');
     res.status(200).json({ data: vouchers });
   } catch (error) {
     next(error);
@@ -295,12 +262,7 @@ export const getVoucherById = async (
 ): Promise<void> => {
   const { id } = req.params;
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
-    const voucher = await Voucher.findById(id);
-
+    const voucher = await Voucher.findOne({ _id: id, isActive: true });
     if (!voucher) {
       throw new NotFoundError('Voucher does not exist.');
     }
@@ -317,11 +279,6 @@ export const updateVoucherByBarcode = async (
 ): Promise<void> => {
   const { barcode } = req.params;
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
-
     const updatedVoucher = await Voucher.findOneAndUpdate(
       { barcode: { $regex: new RegExp(`^${barcode}$`, 'i') } },
       { $set: { isActive: false } },
@@ -330,7 +287,7 @@ export const updateVoucherByBarcode = async (
 
     const data = {
       updatedVoucher,
-      updatedBy: admin._id,
+      updatedBy: req.admin,
     };
 
     res.json({ data: data });
@@ -348,18 +305,15 @@ export const updateVoucherById = async (
   const { validFrom, validTo } = req.body;
 
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
+    const voucher = await Voucher.findOne({ _id: id, isActive: true });
+    if (!voucher) {
+      throw new NotFoundError('Voucher does not exist.');
     }
-
     let updateFields: any = { ...req.body };
-
     if (validFrom || validTo) {
       const now = new Date();
       const toDate = validTo ? new Date(validTo) : undefined;
 
-      // Set isExpired based on validTo
       if (toDate) {
         updateFields.isExpired = now > toDate;
       }
@@ -378,7 +332,7 @@ export const updateVoucherById = async (
     res.json({
       data: {
         updatedVoucher,
-        updatedBy: admin._id,
+        updatedBy: req.admin,
       },
     });
   } catch (error) {

@@ -7,11 +7,6 @@ import { BadRequestError, MissingParamError, NotFoundError } from '../libs/excep
 
 export const createProduct = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
-
     const {
       barcode,
       isActive,
@@ -42,8 +37,8 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
       barcode,
       isActive,
       isDiscountable,
-      updatedBy: admin._id,
-      createdBy: admin._id,
+      updatedBy: req.admin,
+      createdBy: req.admin,
     };
 
     const product = await Product.create(productInfo);
@@ -57,10 +52,6 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
 export const getAllProducts = async (req: Request, res: Response, next: NextFunction) => {
   const { category, search } = req.query;
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
     const filter: any = {};
     if (search) {
       filter.$or = [
@@ -82,10 +73,6 @@ export const getAllProducts = async (req: Request, res: Response, next: NextFunc
 
 export const getBestSellingProducts = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
     const products = await Product.find().sort({ soldQty: -1 });
     res.status(200).json({ data: products });
   } catch (error) {
@@ -96,11 +83,7 @@ export const getBestSellingProducts = async (req: Request, res: Response, next: 
 export const getProductById = async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
-    const product = await Product.findById(id);
+    const product = await Product.findOne({ _id: id, isActive: true });
     if (!product) {
       throw new NotFoundError('Product does not exist.');
     }
@@ -118,16 +101,11 @@ export const updateProductQuantityById = async (
   const { id } = req.params;
   const { qty } = req.body;
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
-
     if (typeof qty !== 'number' || qty < 0) {
       throw new BadRequestError('Invalid stock value');
     }
 
-    const product = await Product.findById(id);
+    const product = await Product.findOne({ _id: id, isActive: true });
     if (!product) {
       throw new NotFoundError('Product does not exist.');
     }
@@ -144,7 +122,7 @@ export const updateProductQuantityById = async (
 
     const data = {
       updatedProduct,
-      updatedBy: admin._id,
+      updatedBy: req.admin,
     };
 
     res.json({ data: data });
@@ -160,20 +138,14 @@ export const updateCancelledProductQuantityById = async (
   const { id } = req.params;
   const { qty } = req.body;
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
-
     if (typeof qty !== 'number' || qty < 0) {
       throw new BadRequestError('Invalid stock value');
     }
 
-    const product = await Product.findById(id);
+    const product = await Product.findOne({ _id: id, isActive: true });
     if (!product) {
       throw new NotFoundError('Product does not exist.');
     }
-
     const updatedProduct = await Product.findByIdAndUpdate(
       id,
       { $inc: { stock: qty, soldQty: -qty } },
@@ -182,7 +154,7 @@ export const updateCancelledProductQuantityById = async (
 
     const data = {
       updatedProduct,
-      updatedBy: admin._id,
+      updatedBy: req.admin,
     };
 
     res.json({ data: data });
@@ -195,17 +167,12 @@ export const updateProductDetailsById = async (req: Request, res: Response, next
   const { id } = req.params;
   const { pictures, stock, ...data } = req.body;
   try {
-    const admin = await User.findById(req.admin);
-    if (!admin) {
-      throw new NotFoundError('Admin does not exist.');
-    }
-
-    const product = await Product.findById(id);
+    const product = await Product.findOne({ _id: id, isActive: true });
     if (!product) {
       throw new NotFoundError('Product does not exist.');
     }
 
-    const updateData = { ...data, updatedBy: admin._id };
+    const updateData = { ...data, updatedBy: req.admin };
     if (stock !== undefined) {
       const updateNumber = (product?.updatedCount.length || 0) + 1;
       const oldStock = product.stock || 0;
