@@ -1,8 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
-
 import { BadRequestError, MissingParamError, NotFoundError } from '../libs/exceptions';
-import { User } from '../models/auth';
 import { Membership } from '../models/membership';
+import mongoose from 'mongoose';
 
 export const createMembership = async (
   req: Request,
@@ -77,6 +76,9 @@ export const getMembershipById = async (
 ): Promise<void> => {
   const { id } = req.params;
   try {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new BadRequestError('Invalid ID format');
+    }
     const member = await Membership.findOne({ _id: id, isActive: true });
     if (!member) {
       throw new NotFoundError('Membership does not exist.');
@@ -129,10 +131,12 @@ export const updateMembershipPointsByPhoneNumber = async (
 };
 
 export const updateMembershipById = async (req: Request, res: Response, next: NextFunction) => {
+  const { id } = req.params;
+  const { phoneNumber, isActive } = req.body;
   try {
-    const { id } = req.params;
-    const { phoneNumber, isActive } = req.body;
-
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new BadRequestError('Invalid ID format');
+    }
     const membership = await Membership.findOne({ _id: id, isActive: true });
     if (!membership) {
       throw new NotFoundError('Membership does not exist.');

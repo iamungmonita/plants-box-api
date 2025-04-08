@@ -28,12 +28,7 @@ export const authentication = async (
 
     // Decoded JWT Payload
     const payload = (await verifyJWTToken(token)) as JwtPayload;
-    if (!payload?.id) {
-      throw new UnauthorizedError('Invalid token payload. Missing `userId`.');
-    }
-    if (!payload?.exp || payload.exp * 1000 < Date.now()) {
-      throw new UnauthorizedError('Token has expired.');
-    }
+
     // Validate If User has registered
     const userId = payload.id;
     const admin = User.findOne({ _id: userId, isActive: true });

@@ -8,6 +8,7 @@ import fs from 'fs';
 import path from 'path';
 import moment from 'moment';
 import { BadRequestError, MissingParamError, NotFoundError } from '../libs/exceptions';
+import mongoose from 'mongoose';
 
 const downloadsDir = path.join(__dirname, '../downloads');
 
@@ -293,7 +294,10 @@ export const downloadOrdersExcel = async (req: Request, res: Response, next: Nex
 export const cancelOrderById = async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
   try {
-    const order = await Order.findOne({ _id: id, isActive: true });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new BadRequestError('Invalid ID format');
+    }
+    const order = await Order.findOne({ _id: id });
     if (!order) {
       throw new NotFoundError('Admin does not exist.');
     }
@@ -320,7 +324,10 @@ export const updateOrderById = async (req: Request, res: Response, next: NextFun
   const { id } = req.params;
   const { total } = req.body;
   try {
-    const order = await Order.findOne({ _id: id, isActive: true });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new BadRequestError('Invalid ID format');
+    }
+    const order = await Order.findOne({ _id: id });
     if (!order) {
       throw new NotFoundError('Order does not exist.');
     }

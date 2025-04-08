@@ -1,8 +1,8 @@
 import { Response, Request, NextFunction } from 'express';
 import { Expense, Role, Voucher } from '../models/system';
-import { User } from '../models/auth';
 import moment from 'moment';
-import { MissingParamError, NotFoundError } from '../libs/exceptions';
+import { BadRequestError, MissingParamError, NotFoundError } from '../libs/exceptions';
+import mongoose from 'mongoose';
 
 export const createRole = async (
   req: Request,
@@ -36,7 +36,6 @@ export const createRole = async (
 export const getRoles = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const roles = await Role.find().populate('createdBy').populate('updatedBy');
-
     res.json({ data: roles });
   } catch (error) {
     next(error);
@@ -49,6 +48,9 @@ export const getRoleById = async (
 ): Promise<void> => {
   const { id } = req.params;
   try {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new BadRequestError('Invalid ID format');
+    }
     const role = await Role.findOne({ _id: id, isActive: true });
     if (!role) {
       throw new NotFoundError('Role does not exist.');
@@ -66,6 +68,9 @@ export const updateRoleById = async (
 ): Promise<void> => {
   const { id } = req.params;
   try {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new BadRequestError('Invalid ID format');
+    }
     const role = await Role.findOne({ _id: id, isActive: true });
     if (!role) {
       throw new NotFoundError('Role does not exist.');
@@ -89,12 +94,13 @@ export const createExpense = async (
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
-  const { category, amount, remarks, supplier, ...data } = req.body;
+  const { category, amount, remarks, supplier, date, ...data } = req.body;
 
   try {
     if (!amount) throw new MissingParamError('amount');
     if (!supplier) throw new MissingParamError('supplier');
     if (!category) throw new MissingParamError('category');
+    if (!date) throw new MissingParamError('date');
     const expense = await Expense.create({
       amount,
       supplier,
@@ -131,6 +137,9 @@ export const getExpenseById = async (
 ): Promise<void> => {
   const { id } = req.params;
   try {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new BadRequestError('Invalid ID format');
+    }
     const expense = await Expense.findOne({ _id: id, isActive: true });
 
     if (!expense) {
@@ -149,6 +158,9 @@ export const updateExpenseById = async (
 ): Promise<void> => {
   const { id } = req.params;
   try {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new BadRequestError('Invalid ID format');
+    }
     const expense = await Expense.findOne({ _id: id, isActive: true });
     if (!expense) {
       throw new NotFoundError('Expense does not exist.');
@@ -262,7 +274,10 @@ export const getVoucherById = async (
 ): Promise<void> => {
   const { id } = req.params;
   try {
-    const voucher = await Voucher.findOne({ _id: id, isActive: true });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new BadRequestError('Invalid ID format');
+    }
+    const voucher = await Voucher.findById(id);
     if (!voucher) {
       throw new NotFoundError('Voucher does not exist.');
     }
@@ -305,7 +320,10 @@ export const updateVoucherById = async (
   const { validFrom, validTo } = req.body;
 
   try {
-    const voucher = await Voucher.findOne({ _id: id, isActive: true });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new BadRequestError('Invalid ID format');
+    }
+    const voucher = await Voucher.findOne({ _id: id });
     if (!voucher) {
       throw new NotFoundError('Voucher does not exist.');
     }
