@@ -46,6 +46,7 @@ const expenseSchema = new Schema(
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     supplier: { type: String, trim: true },
     invoice: { type: String, trim: true },
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true },
 );

@@ -4,6 +4,7 @@ import { saveBase64Image } from '../helpers/file';
 import { Product } from '../models/products';
 import { User } from '../models/auth';
 import { BadRequestError, MissingParamError, NotFoundError } from '../libs/exceptions';
+import mongoose from 'mongoose';
 
 export const createProduct = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -83,6 +84,9 @@ export const getBestSellingProducts = async (req: Request, res: Response, next: 
 export const getProductById = async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
   try {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new BadRequestError('Invalid ID format');
+    }
     const product = await Product.findOne({ _id: id, isActive: true });
     if (!product) {
       throw new NotFoundError('Product does not exist.');
@@ -101,10 +105,12 @@ export const updateProductQuantityById = async (
   const { id } = req.params;
   const { qty } = req.body;
   try {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new BadRequestError('Invalid ID format');
+    }
     if (typeof qty !== 'number' || qty < 0) {
       throw new BadRequestError('Invalid stock value');
     }
-
     const product = await Product.findOne({ _id: id, isActive: true });
     if (!product) {
       throw new NotFoundError('Product does not exist.');
@@ -130,6 +136,7 @@ export const updateProductQuantityById = async (
     next(error);
   }
 };
+
 export const updateCancelledProductQuantityById = async (
   req: Request,
   res: Response,
@@ -138,10 +145,13 @@ export const updateCancelledProductQuantityById = async (
   const { id } = req.params;
   const { qty } = req.body;
   try {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new BadRequestError('Invalid ID format');
+    }
+
     if (typeof qty !== 'number' || qty < 0) {
       throw new BadRequestError('Invalid stock value');
     }
-
     const product = await Product.findOne({ _id: id, isActive: true });
     if (!product) {
       throw new NotFoundError('Product does not exist.');
@@ -167,6 +177,9 @@ export const updateProductDetailsById = async (req: Request, res: Response, next
   const { id } = req.params;
   const { pictures, stock, ...data } = req.body;
   try {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new BadRequestError('Invalid ID format');
+    }
     const product = await Product.findOne({ _id: id, isActive: true });
     if (!product) {
       throw new NotFoundError('Product does not exist.');

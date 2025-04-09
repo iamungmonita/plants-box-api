@@ -6,6 +6,7 @@ import { BadRequestError, DuplicatedParamError, MissingParamError, NotFoundError
 import { User } from '../models/auth';
 import { Role } from '../models/system';
 import { initialCount } from './LogController';
+import mongoose from 'mongoose';
 
 export const signUp = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const { firstName, lastName, role, codes, email, password, phoneNumber, isActive, pictures } =
@@ -117,6 +118,9 @@ export const getUserById = async (
 ): Promise<void> => {
   const { id } = req.params;
   try {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new BadRequestError('Invalid ID format');
+    }
     const user = await User.findOne({ _id: id, isActive: true });
     if (!user) {
       throw new NotFoundError('User does not exist.');
@@ -137,6 +141,9 @@ export const updateUserById = async (
   const { pictures, firstName, lastName, ...data } = req.body;
 
   try {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new BadRequestError('Invalid ID format');
+    }
     const user = await User.findOne({ _id: id, isActive: true });
     if (!user) {
       throw new NotFoundError('User does not exist.');
@@ -186,6 +193,9 @@ export const updateUserPasswordById = async (
   const { id } = req.params;
   const { password } = req.body;
   try {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new BadRequestError('Invalid ID format');
+    }
     const user = await User.findOne({ _id: id, isActive: true });
     if (!user) {
       throw new NotFoundError('User does not exist.');
