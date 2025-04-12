@@ -35,7 +35,10 @@ export const createRole = async (
 
 export const getRoles = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const roles = await Role.find().populate('createdBy').populate('updatedBy');
+    const roles = await Role.find()
+      .populate('createdBy')
+      .populate('updatedBy')
+      .sort({ createdAt: -1 });
     res.json({ data: roles });
   } catch (error) {
     next(error);
@@ -123,7 +126,10 @@ export const getAllExpenses = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const expenses = await Expense.find().populate('createdBy').populate('updatedBy');
+    const expenses = await Expense.find()
+      .populate('createdBy')
+      .populate('updatedBy')
+      .sort({ createdAt: -1 });
     res.json({ data: expenses });
   } catch (error) {
     next(error);
@@ -260,7 +266,10 @@ export const getAllVouchers = async (
         { barcode: { $regex: search, $options: 'i' } },
       ];
     }
-    const vouchers = await Voucher.find(filter).populate('createdBy').populate('updatedBy');
+    const vouchers = await Voucher.find(filter)
+      .populate('createdBy')
+      .populate('updatedBy')
+      .sort({ createdAt: -1 });
     res.status(200).json({ data: vouchers });
   } catch (error) {
     next(error);

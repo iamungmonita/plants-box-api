@@ -100,7 +100,7 @@ export const getOrders = async (req: Request, res: Response, next: NextFunction)
   }
 
   try {
-    const orders = await Order.find(filter).populate('createdBy');
+    const orders = await Order.find(filter).populate('createdBy').sort({ createdAt: -1 });
     const amount = orders.reduce((acc, order) => acc + order.totalAmount, 0);
     const data = {
       orders: orders,
@@ -162,7 +162,7 @@ export const getPurchasedOrderByProductId = async (
     if (purchasedId) {
       query['purchasedId'] = { $regex: purchasedId, $options: 'i' };
     }
-    const order = await Order.find(query).populate('createdBy');
+    const order = await Order.find(query).populate('createdBy').sort({ createdAt: -1 });
     if (order.length === 0) {
       throw new NotFoundError('Order with this Purchased ID does not exist.');
     }
