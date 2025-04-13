@@ -24,7 +24,7 @@ export const createLog = async (req: Request, res: Response, next: NextFunction)
 
 export const getLogs = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const log = await Log.find().populate('createdBy');
+    const log = await Log.find().populate('createdBy').sort({ createdAt: -1 });
     res.json({ data: log });
   } catch (error) {
     next(error);

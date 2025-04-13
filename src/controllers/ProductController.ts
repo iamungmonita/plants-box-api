@@ -1,8 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
-
 import { saveBase64Image } from '../helpers/file';
 import { Product } from '../models/products';
-import { User } from '../models/auth';
 import { BadRequestError, MissingParamError, NotFoundError } from '../libs/exceptions';
 import mongoose from 'mongoose';
 
@@ -64,8 +62,10 @@ export const getAllProducts = async (req: Request, res: Response, next: NextFunc
     if (category) {
       Object.assign(filter, { category }); // Exact match since it's an autocomplete value
     }
-    const products = await Product.find(filter).populate('createdBy').populate('updatedBy');
-
+    const products = await Product.find(filter)
+      .populate('createdBy')
+      .populate('updatedBy')
+      .sort({ createdAt: -1 });
     res.status(200).json({ data: products });
   } catch (error) {
     next(error);
@@ -74,7 +74,8 @@ export const getAllProducts = async (req: Request, res: Response, next: NextFunc
 
 export const getBestSellingProducts = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const products = await Product.find().sort({ soldQty: -1 });
+    const products = await Product.find().sort({ soldQty: -1, createdAt: -1 });
+
     res.status(200).json({ data: products });
   } catch (error) {
     next(error);

@@ -60,7 +60,10 @@ export const getAllMembership = async (
       Object.assign(filter, { type }); // Exact match since it's an autocomplete value
     }
 
-    const member = await Membership.find(filter).populate('createdBy').populate('updatedBy');
+    const member = await Membership.find(filter)
+      .populate('createdBy')
+      .populate('updatedBy')
+      .sort({ createdAt: -1 });
     const count = member.length;
     const profile = { member, count };
     res.json({ data: profile });

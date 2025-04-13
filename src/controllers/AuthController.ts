@@ -104,7 +104,11 @@ export const getAdmin = async (req: Request, res: Response, next: NextFunction) 
 
 export const getUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const users = await User.find().populate('createdBy').populate('role').populate('updatedBy');
+    const users = await User.find()
+      .populate('createdBy')
+      .populate('role')
+      .populate('updatedBy')
+      .sort({ createdAt: -1 });
     res.json({ data: users });
   } catch (error) {
     next(error);
