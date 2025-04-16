@@ -1,5 +1,3 @@
-import { CountLog } from '../models/log';
-
 export const convertedDateStart = (parsedDate: Date) => {
   const converted = new Date(
     parsedDate.getUTCFullYear(),

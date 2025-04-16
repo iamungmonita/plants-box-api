@@ -1,5 +1,5 @@
 import { Response, Request, NextFunction } from 'express';
-import { CountLog, Log } from '../models/log';
+import { Log } from '../models/log';
 import { BadRequestError } from '../libs/exceptions';
 
 export const createLog = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -37,10 +37,11 @@ export const initialCount = async (userId: string): Promise<boolean> => {
   }
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
-  const todayLogins = await CountLog.countDocuments({
+  const todayLogins = await Log.countDocuments({
     createdAt: { $gte: startOfDay },
   });
+
   const isFirstLogin = todayLogins === 0;
-  await CountLog.create({ userId });
+
   return isFirstLogin;
 };

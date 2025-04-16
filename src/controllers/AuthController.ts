@@ -7,6 +7,7 @@ import { User } from '../models/auth';
 import { Role } from '../models/system';
 import { initialCount } from './LogController';
 import mongoose from 'mongoose';
+import { validation } from '../helpers/auth';
 
 export const signUp = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const { firstName, lastName, role, codes, email, password, phoneNumber, isActive, pictures } =
@@ -85,6 +86,21 @@ export const signIn = async (req: Request, res: Response, next: NextFunction): P
     const data = { token, initialLog };
 
     res.json({ data: data });
+  } catch (error) {
+    next(error);
+  }
+};
+export const getDiscountPermission = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  const { email, password } = req.body;
+  try {
+    const hasPermission = await validation(email, password);
+    if (hasPermission) {
+      res.json({ data: true });
+    }
   } catch (error) {
     next(error);
   }

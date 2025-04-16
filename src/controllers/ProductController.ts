@@ -16,6 +16,7 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
       category,
       importedPrice,
       isDiscountable,
+      remark,
     } = req.body;
     if (!name) throw new MissingParamError('name');
     if (!price) throw new MissingParamError('price');
@@ -35,6 +36,7 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
       category,
       barcode,
       isActive,
+      remark,
       isDiscountable,
       updatedBy: req.admin,
       createdBy: req.admin,
@@ -89,6 +91,18 @@ export const getProductById = async (req: Request, res: Response, next: NextFunc
       throw new BadRequestError('Invalid ID format');
     }
     const product = await Product.findOne({ _id: id, isActive: true });
+    if (!product) {
+      throw new NotFoundError('Product does not exist.');
+    }
+    res.json({ data: product });
+  } catch (error) {
+    next(error);
+  }
+};
+export const getProductByBarcode = async (req: Request, res: Response, next: NextFunction) => {
+  const { barcode } = req.params;
+  try {
+    const product = await Product.findOne({ barcode: barcode, isActive: true });
     if (!product) {
       throw new NotFoundError('Product does not exist.');
     }

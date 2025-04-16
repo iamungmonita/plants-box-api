@@ -17,14 +17,3 @@ const log = new mongoose.Schema(
   },
 );
 export const Log = mongoose.model('Log', log);
-
-const countLog = new mongoose.Schema(
-  {
-    userId: { type: String, required: true },
-  },
-  {
-    timestamps: true,
-  },
-);
-
-export const CountLog = mongoose.model('Count', countLog);
