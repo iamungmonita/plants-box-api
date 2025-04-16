@@ -14,6 +14,7 @@ const StockUpdateSchema = new mongoose.Schema(
 const product = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true, minlength: 3 },
+    remark: { type: String },
     price: { type: Number, required: true, min: 0 }, // Changed to Number
     importedPrice: { type: Number, required: true, min: 0 }, // Changed to Number
     pictures: { type: String }, // Array of image URLs/paths
