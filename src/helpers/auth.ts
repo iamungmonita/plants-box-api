@@ -20,7 +20,7 @@ export const validation = async (email: string, password: string): Promise<boole
     throw new BadRequestError('Invalid password');
   }
 
-  if (user.role && user.role._id.toString() === '67e912bf7e235b4a0a707500') {
+  if (user.codes && user.codes.includes('9999')) {
     return true;
   } else {
     throw new BadRequestError('Unauthorized role');
